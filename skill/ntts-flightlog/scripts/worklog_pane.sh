@@ -1,0 +1,1 @@
+/Users/sungyub/.codex/skills/ntts-flightlog/scripts/flightlog.sh

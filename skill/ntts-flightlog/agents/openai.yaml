@@ -1,0 +1,3 @@
+display_name: NTTS Flightlog
+short_description: Keep a concise live task flightlog visible in a tmux side pane.
+default_prompt: Start NTTS Flightlog for this task, then keep it updated with mode, status, decisions, evidence, blockers, and turn elapsed time.
