@@ -9,15 +9,17 @@ It is built for long-running AI coding sessions where chat scrollback gets noisy
 - turn start/end with elapsed time
 - decisions, evidence, blockers, and milestones
 - Korean-first pane output
-- low-flicker redraw using `fswatch` when available
+- flicker-free redraw: only repaints when `main.md` mtime actually changes
+- pinned menu header at top, no scrollback accumulation across redraws
 
-Runtime dependencies: `bash`, `tmux`, `awk` (always available on macOS/Linux). Optional: `fswatch` (file-change redraw), `glow` (alternative renderer). No dependency on Codex CLI, Claude Code, Gemini CLI, oh-my-codex, or oh-my-claudecode — the skills are loaded by their respective agents, but the script itself is just bash.
+Runtime dependencies: `bash`, `tmux`, `awk` (always available on macOS/Linux). Optional: `glow` (alternative renderer). No dependency on Codex CLI, Claude Code, Gemini CLI, oh-my-codex, or oh-my-claudecode — the skills are loaded by their respective agents, but the script itself is just bash.
 
 ## Preview
 
 ```text
-작업 기록 PANE  /path/to/repo/.ntts-flightlog/main.md
---------------------------------------------------------------------------------
+[1]평면 [2]턴별 [3]결정 [4]블로커
+[r]새로고침 [q]종료
+----------------------------------------
 # 작업 기록
 
 ## 현재 상태
@@ -34,7 +36,7 @@ Runtime dependencies: `bash`, `tmux`, `awk` (always available on macOS/Linux). O
 ────────────────────────────────
 시작 시각: 2026-05-19T04:49:10Z.
 
-■ 2026-05-19T04:50:22Z  [evidence]
+✓ 2026-05-19T04:50:22Z  [evidence]
   pytest 통과
 73개 테스트 통과.
 ```
@@ -70,12 +72,6 @@ Then restart your agent so it picks up the new skill. Typical trigger phrases:
 ```text
 ntts-flightlog 시작해줘
 flightlog 켜줘
-```
-
-Optional, recommended on macOS for flicker-free redraw:
-
-```bash
-brew install fswatch
 ```
 
 ## Usage
@@ -122,10 +118,11 @@ ntts-flightlog view <flat|turns|decisions|blockers>  # one-shot ANSI render
 
 Each `turn-start` creates `.ntts-flightlog/turns/turn-{N}.md` and mirrors every subsequent `entry`/`decision`/`evidence`/`blocker`/`turn-end` into it. That gives every main task its own scannable history alongside the flat main log.
 
-Inside the tmux pane, the top bar is a menu — press `1`–`4` to switch views, `r` to reload, `q` to quit:
+Inside the tmux pane, the top bar is a 2-line menu — press `1`–`4` to switch views, `r` to reload, `q` to quit:
 
 ```text
-[1] 평면   [2] 턴별   [3] 결정   [4] 블로커     [r] 새로고침  [q] 종료
+[1]평면 [2]턴별 [3]결정 [4]블로커
+[r]새로고침 [q]종료
 ```
 
 - `1` flat — every entry in chronological order (default).
