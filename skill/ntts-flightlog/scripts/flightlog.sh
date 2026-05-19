@@ -319,19 +319,33 @@ render_markdown_ansi() {
       DIM = ESC "[2m"
       ST = ESC "\\"
       OSC8 = ESC "]8;;"
-      colors[0] = ESC "[38;5;81m"
-      colors[1] = ESC "[38;5;114m"
-      colors[2] = ESC "[38;5;215m"
-      colors[3] = ESC "[38;5;177m"
-      colors[4] = ESC "[38;5;117m"
-      red = ESC "[38;5;203m"
-      entry = 0
+      title_color    = ESC "[38;5;81m"
+      section_color  = ESC "[38;5;117m"
+      mode_color     = ESC "[38;5;220m"
+      entry_color    = ESC "[38;5;109m"
+      decision_color = ESC "[38;5;215m"
+      evidence_color = ESC "[38;5;114m"
+      blocker_color  = ESC "[38;5;203m"
+      turn_colors[0] = ESC "[38;5;207m"
+      turn_colors[1] = ESC "[38;5;39m"
+      turn_colors[2] = ESC "[38;5;213m"
+      turn_colors[3] = ESC "[38;5;99m"
+      turn_colors[4] = ESC "[38;5;198m"
+      turn_colors[5] = ESC "[38;5;165m"
+      turn_colors[6] = ESC "[38;5;75m"
+      turn_colors[7] = ESC "[38;5;141m"
+      turn_palette_size = 8
     }
     function osc_link(url, text) {
       return OSC8 url ST text OSC8 ST
     }
-    /^# / { print BOLD colors[0] $0 RESET; next }
-    /^## / { print ""; print BOLD colors[4] $0 RESET; next }
+    function turn_color_for(n,    idx) {
+      idx = (n - 1) % turn_palette_size
+      if (idx < 0) idx = 0
+      return turn_colors[idx]
+    }
+    /^# / { print BOLD title_color $0 RESET; next }
+    /^## / { print ""; print BOLD section_color $0 RESET; next }
     /^업데이트:/ { print DIM $0 RESET; next }
     /^시작:/ { print DIM $0 RESET; next }
     /^### .*\[/ {
@@ -349,43 +363,46 @@ render_markdown_ansi() {
         sub(/.*\[turn-/, "", n)
         sub(/-start\].*/, "", n)
         url = "file://" turns_dir "/turn-" n ".md"
-        color = colors[entry % 5]
+        color = turn_color_for(n+0)
         print color "■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■" RESET
         printf "%s%s▶ %s  %s%s\n", BOLD, color, ts, kind, RESET
         printf "%s%s  %s%s\n", BOLD, color, osc_link(url, title), RESET
         print color "────────────────────────────────" RESET
-        entry++
+        next
+      }
+      if (line ~ /\[turn-[0-9]+-end\]/) {
+        n = line
+        sub(/.*\[turn-/, "", n)
+        sub(/-end\].*/, "", n)
+        color = turn_color_for(n+0)
+        print color "────────────────────────────────" RESET
+        printf "%s%s■ %s  %s%s\n", BOLD, color, ts, kind, RESET
+        printf "%s%s  %s%s\n", BOLD, color, title, RESET
         next
       }
       if (line ~ /\[mode\]/) {
-        printf "%s%s▣ %s  %s%s\n", BOLD, colors[3], ts, kind, RESET
-        printf "%s%s  %s%s\n", BOLD, colors[3], title, RESET
-        entry++
+        printf "%s%s▣ %s  %s%s\n", BOLD, mode_color, ts, kind, RESET
+        printf "%s%s  %s%s\n", BOLD, mode_color, title, RESET
         next
       }
       if (line ~ /\[entry\]/) {
-        color = colors[entry % 5]
-        printf "%s%s◆ %s  %s%s\n", BOLD, color, ts, kind, RESET
-        printf "%s%s  %s%s\n", BOLD, color, title, RESET
-        entry++
+        printf "%s%s◆ %s  %s%s\n", BOLD, entry_color, ts, kind, RESET
+        printf "%s%s  %s%s\n", BOLD, entry_color, title, RESET
         next
       }
-      if (line ~ /\[(turn-[0-9]+-end|evidence)\]/) {
-        printf "%s%s■ %s  %s%s\n", BOLD, colors[1], ts, kind, RESET
-        printf "%s%s  %s%s\n", BOLD, colors[1], title, RESET
-        entry++
+      if (line ~ /\[evidence\]/) {
+        printf "%s%s✓ %s  %s%s\n", BOLD, evidence_color, ts, kind, RESET
+        printf "%s%s  %s%s\n", BOLD, evidence_color, title, RESET
         next
       }
       if (line ~ /\[decision\]/) {
-        printf "%s%s◆ %s  %s%s\n", BOLD, colors[2], ts, kind, RESET
-        printf "%s%s  %s%s\n", BOLD, colors[2], title, RESET
-        entry++
+        printf "%s%s◆ %s  %s%s\n", BOLD, decision_color, ts, kind, RESET
+        printf "%s%s  %s%s\n", BOLD, decision_color, title, RESET
         next
       }
       if (line ~ /\[blocker\]/) {
-        printf "%s%s!! %s  %s%s\n", BOLD, red, ts, kind, RESET
-        printf "%s%s  %s%s\n", BOLD, red, title, RESET
-        entry++
+        printf "%s%s!! %s  %s%s\n", BOLD, blocker_color, ts, kind, RESET
+        printf "%s%s  %s%s\n", BOLD, blocker_color, title, RESET
         next
       }
     }
@@ -489,52 +506,66 @@ view="flat"
 
 print_header() {
   local v="\$1"
-  local reset bold dim hl pane_color
+  local reset bold dim hl
   reset=\$(printf '\\033[0m')
   bold=\$(printf '\\033[1m')
   dim=\$(printf '\\033[2m')
   hl=\$(printf '\\033[38;5;226m')
-  pane_color=\$(printf '\\033[38;5;81m')
-  printf '%s%s작업 기록 PANE%s  %s\\n' "\$bold" "\$pane_color" "\$reset" '${abs_file}'
-  local items=("flat:[1] 평면" "turns:[2] 턴별" "decisions:[3] 결정" "blockers:[4] 블로커")
+  local items=("flat:[1]평면" "turns:[2]턴별" "decisions:[3]결정" "blockers:[4]블로커")
   local label_line="" item id label
   for item in "\${items[@]}"; do
     id="\${item%%:*}"
     label="\${item#*:}"
     if [[ "\$id" == "\$v" ]]; then
-      label_line+="\${bold}\${hl}\${label}\${reset}  "
+      label_line+="\${bold}\${hl}\${label}\${reset} "
     else
-      label_line+="\${dim}\${label}\${reset}  "
+      label_line+="\${dim}\${label}\${reset} "
     fi
   done
-  label_line+="\${dim}[r] 새로고침  [q] 종료\${reset}"
   printf '%b\\n' "\$label_line"
-  printf '%*s\\n' 80 '' | tr ' ' -
+  printf '%b\\n' "\${dim}[r]새로고침 [q]종료\${reset}"
+  local cols
+  cols=\$(tput cols 2>/dev/null || printf 80)
+  printf '%*s\\n' \$cols '' | tr ' ' -
 }
 
 draw_once() {
-  printf '\\033[H\\033[J'
+  printf '\\033[H\\033[J\\033[3J\\033[?7l'
   print_header "\$view"
+  local term_h content_h
+  term_h=\$(tput lines 2>/dev/null || printf 30)
+  content_h=\$((term_h - 4))
+  [ \$content_h -lt 5 ] && content_h=5
   WORKLOG_DIR='${abs_worklog_dir}' \\
   WORKLOG_FILE='${abs_file}' \\
   TURNS_DIR='${abs_turns_dir}' \\
-  '${abs_script}' view "\$view" 2>/dev/null | sed -n '1,240p'
+  '${abs_script}' view "\$view" 2>/dev/null | tail -n "\$content_h"
+  printf '\\033[?7h'
+}
+
+get_mtime() {
+  stat -f "%m" '${abs_file}' 2>/dev/null || stat -c "%Y" '${abs_file}' 2>/dev/null || printf 0
 }
 
 draw_once
+last_mtime=\$(get_mtime)
 while true; do
   if read -t '${REFRESH_SECONDS}' -n 1 key 2>/dev/null; then
     case "\$key" in
-      1) view="flat";      draw_once ;;
-      2) view="turns";     draw_once ;;
-      3) view="decisions"; draw_once ;;
-      4) view="blockers";  draw_once ;;
-      r|R) draw_once ;;
+      1) view="flat";      draw_once; last_mtime=\$(get_mtime) ;;
+      2) view="turns";     draw_once; last_mtime=\$(get_mtime) ;;
+      3) view="decisions"; draw_once; last_mtime=\$(get_mtime) ;;
+      4) view="blockers";  draw_once; last_mtime=\$(get_mtime) ;;
+      r|R) draw_once; last_mtime=\$(get_mtime) ;;
       q|Q) break ;;
       *) : ;;
     esac
   else
-    draw_once
+    current_mtime=\$(get_mtime)
+    if [[ "\$current_mtime" != "\$last_mtime" ]]; then
+      draw_once
+      last_mtime=\$current_mtime
+    fi
   fi
 done
 EOF
