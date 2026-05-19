@@ -1,6 +1,6 @@
 # NTTS Flightlog
 
-NTTS Flightlog is a small Codex/terminal companion that keeps a concise live task log in a tmux side pane.
+NTTS Flightlog is a small terminal companion that keeps a concise live task log in a tmux side pane while any CLI coding agent works. It is agent-agnostic and ships with skill packages for **Claude Code**, **Codex**, and **Gemini CLI**, plus a standalone `ntts-flightlog` CLI you can drive from any shell.
 
 It is built for long-running AI coding sessions where chat scrollback gets noisy. Flightlog keeps the important state visible:
 
@@ -11,12 +11,14 @@ It is built for long-running AI coding sessions where chat scrollback gets noisy
 - Korean-first pane output
 - low-flicker redraw using `fswatch` when available
 
+Runtime dependencies: `bash`, `tmux`, `awk` (always available on macOS/Linux). Optional: `fswatch` (file-change redraw), `glow` (alternative renderer). No dependency on Codex CLI, Claude Code, Gemini CLI, oh-my-codex, or oh-my-claudecode — the skills are loaded by their respective agents, but the script itself is just bash.
+
 ## Preview
 
 ```text
-작업 기록 PANE  /path/to/repo/.omx/worklog/main.md
+작업 기록 PANE  /path/to/repo/.ntts-flightlog/main.md
 --------------------------------------------------------------------------------
-# Codex 작업 기록
+# 작업 기록
 
 ## 현재 상태
 
@@ -39,30 +41,38 @@ It is built for long-running AI coding sessions where chat scrollback gets noisy
 
 ## Install
 
-### Codex skill install
+One install script handles every supported agent. By default it auto-detects which agent directories already exist (`~/.codex`, `~/.claude`, `~/.gemini`) and installs the skill into each, plus the CLI to `~/.local/bin`.
 
 ```bash
 git clone https://github.com/ntts9990/ntts-flightlog.git
-mkdir -p ~/.codex/skills
-cp -R ntts-flightlog/skill/ntts-flightlog ~/.codex/skills/
+cd ntts-flightlog
+./scripts/install.sh
 ```
 
-Restart Codex so the skill list is reloaded. Then call:
+Restrict to a single agent if you prefer:
+
+```bash
+./scripts/install.sh --claude     # Claude Code only
+./scripts/install.sh --codex      # Codex only
+./scripts/install.sh --gemini     # Gemini CLI only
+./scripts/install.sh --all        # force-install to all three
+./scripts/install.sh --no-cli     # skip ~/.local/bin/ntts-flightlog
+```
+
+One-liner (clones to a temp dir, runs `install.sh`, cleans up):
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/ntts9990/ntts-flightlog/main/scripts/install-from-github.sh)
+```
+
+Then restart your agent so it picks up the new skill. Typical trigger phrases:
 
 ```text
-$ntts-flightlog 시작해줘
+ntts-flightlog 시작해줘
+flightlog 켜줘
 ```
 
-### CLI install
-
-```bash
-git clone https://github.com/ntts9990/ntts-flightlog.git
-mkdir -p ~/.local/bin
-cp ntts-flightlog/bin/ntts-flightlog ~/.local/bin/
-chmod +x ~/.local/bin/ntts-flightlog
-```
-
-Optional, recommended on macOS:
+Optional, recommended on macOS for flicker-free redraw:
 
 ```bash
 brew install fswatch
@@ -81,10 +91,12 @@ ntts-flightlog evidence "pytest 통과" "73개 테스트 통과"
 ntts-flightlog turn-end "배포 smoke 검증 완료"
 ```
 
-If you installed only the Codex skill, use:
+If the CLI is not on PATH, call the skill script directly. Path depends on which agent installed it:
 
 ```bash
-~/.codex/skills/ntts-flightlog/scripts/flightlog.sh auto
+~/.claude/skills/ntts-flightlog/scripts/flightlog.sh auto   # Claude Code
+~/.codex/skills/ntts-flightlog/scripts/flightlog.sh auto    # Codex
+~/.gemini/skills/ntts-flightlog/scripts/flightlog.sh auto   # Gemini CLI
 ```
 
 ## Commands
@@ -101,27 +113,50 @@ ntts-flightlog entry <title> [detail]
 ntts-flightlog decision <title> [detail]
 ntts-flightlog evidence <title> [detail]
 ntts-flightlog blocker <title> [detail]
-ntts-flightlog path
+ntts-flightlog path                                  # absolute path of main worklog file
+ntts-flightlog turn-path [N]                         # absolute path of turn N (default: latest)
+ntts-flightlog view <flat|turns|decisions|blockers>  # one-shot ANSI render
 ```
+
+## Views and clickable turns
+
+Each `turn-start` creates `.ntts-flightlog/turns/turn-{N}.md` and mirrors every subsequent `entry`/`decision`/`evidence`/`blocker`/`turn-end` into it. That gives every main task its own scannable history alongside the flat main log.
+
+Inside the tmux pane, the top bar is a menu — press `1`–`4` to switch views, `r` to reload, `q` to quit:
+
+```text
+[1] 평면   [2] 턴별   [3] 결정   [4] 블로커     [r] 새로고침  [q] 종료
+```
+
+- `1` flat — every entry in chronological order (default).
+- `2` turns — grouped by `turn-{N}.md`, each turn rendered as its own block.
+- `3` decisions — only `[decision]` entries.
+- `4` blockers — only `[blocker]` entries.
+
+Turn-start titles in the pane are OSC 8 hyperlinks. cmd/ctrl-click in iTerm2, WezTerm, Kitty, Ghostty, or the VS Code integrated terminal opens the corresponding `turn-{N}.md` in your default editor. Outside the pane, use `ntts-flightlog turn-path N` to get the path directly.
 
 ## Environment
 
 ```text
-WORKLOG_DIR       default: .omx/worklog
-WORKLOG_FILE      default: .omx/worklog/main.md
+WORKLOG_DIR       default: .ntts-flightlog (or .omx/worklog if it already exists, for BC)
+WORKLOG_FILE      default: ${WORKLOG_DIR}/main.md
 REFRESH_SECONDS   default: 2
 PANE_PERCENT      default: 34
 WORKLOG_RENDERER  default: color; set to glow to use glow when installed
 ```
 
-## Distribution Notes
+## Distribution Layout
 
-This repo intentionally ships as:
-
-- a Codex skill under `skill/ntts-flightlog`
-- a standalone CLI script under `bin/ntts-flightlog`
-
-That keeps installation simple for Codex, Claude Code, or any terminal workflow.
+```
+skill/ntts-flightlog/     # Agent skill package (shared by Codex, Claude Code, Gemini)
+  SKILL.md                # Agent-facing description
+  scripts/flightlog.sh    # Main script (self-contained)
+  references/             # Design notes
+  agents/openai.yaml      # Codex-specific UI metadata (ignored by other agents)
+bin/ntts-flightlog        # Standalone CLI (identical to scripts/flightlog.sh)
+scripts/install.sh        # Multi-agent installer
+scripts/install-from-github.sh  # curl|bash bootstrap
+```
 
 ## License
 
