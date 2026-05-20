@@ -104,8 +104,9 @@ ntts-flightlog turn-start <title> [--intent text] [--constraints a,b] [--done-wh
 ntts-flightlog turn-end [summary]
 ntts-flightlog entry <title> [detail]
 ntts-flightlog decision <title> [detail]
-ntts-flightlog evidence <title> [detail]
+ntts-flightlog evidence <title> [detail] [--link decision-id-or-title]
 ntts-flightlog blocker <title> [detail]
+ntts-flightlog blocker-resolve <id-or-title> [resolution]
 ntts-flightlog report [--format text|json] [--window day|week|all] [--agent name]
 ntts-flightlog agent-stats [--format text|json] [--window day|week|all] [--agent name]
 ntts-flightlog refresh-anchor [turn_id]
@@ -140,10 +141,15 @@ Inside the tmux pane, the top bar is a 2-line menu — press `1`–`4` to switch
 [r]새로고침 [q]종료
 ```
 
-- `1` flat — every entry in chronological order (default).
-- `2` turns — grouped by `turn-{N}.md`, each turn rendered as its own block.
-- `3` decisions — only `[decision]` entries.
-- `4` blockers — only `[blocker]` entries.
+- `1` flat — chronological live log.
+- `2` turns — compact turn index with status, elapsed time, signal counts, and the latest result.
+- `3` decisions — ADR-lite decision log with turn context and linked/same-turn evidence counts.
+- `4` blockers — open-risk board with open blockers first and resolved blockers below.
+
+`evidence --link` accepts either a decision entry ID or a unique decision title
+fragment. Ambiguous matches fail instead of guessing. `blocker-resolve` accepts a
+blocker ID, entry ID, exact title, or unique title fragment and records the
+resolution note for the blockers view.
 
 Turn-start titles in the pane are OSC 8 hyperlinks. cmd/ctrl-click in iTerm2, WezTerm, Kitty, Ghostty, or the VS Code integrated terminal opens the corresponding `turn-{N}.md` in your default editor. Outside the pane, use `ntts-flightlog turn-path N` to get the path directly.
 
