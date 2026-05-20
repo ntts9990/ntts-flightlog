@@ -444,6 +444,9 @@ func TestRenderReport_Nil(t *testing.T) {
 	if !strings.Contains(got, "리포트") {
 		t.Errorf("RenderReport nil: expected report header, got %q", got)
 	}
+	if !strings.Contains(got, "데이터 없음") {
+		t.Errorf("RenderReport nil: expected empty-data message, got %q", got)
+	}
 }
 
 func TestRenderReport_WithData(t *testing.T) {
@@ -453,15 +456,33 @@ func TestRenderReport_WithData(t *testing.T) {
 		},
 		Turns: []views.Turn{
 			{ID: "t1", SessionID: "s1", SequenceNo: 1, StartedAt: "2026-05-20T10:00:00Z", Status: "active"},
+			{ID: "t2", SessionID: "s1", SequenceNo: 2, StartedAt: "2026-05-20T10:05:00Z",
+				Status:    "complete",
+				ElapsedMs: sql.NullInt64{Int64: 120000, Valid: true}},
 		},
 		Entries: []views.Entry{
 			{ID: "e1", SessionID: "s1", Kind: "entry", Title: "항목", CreatedAt: "2026-05-20T10:01:00Z"},
 			{ID: "e2", SessionID: "s1", Kind: "decision", Title: "결정", CreatedAt: "2026-05-20T10:02:00Z"},
 			{ID: "e3", SessionID: "s1", Kind: "evidence", Title: "근거", CreatedAt: "2026-05-20T10:03:00Z"},
 			{ID: "e4", SessionID: "s1", Kind: "blocker", Title: "블로커", CreatedAt: "2026-05-20T10:04:00Z"},
+			{ID: "e5", SessionID: "s1", Kind: "decision", Title: "옛 결정", CreatedAt: "2026-05-20T10:05:00Z"},
+		},
+		Blockers: []views.Blocker{
+			{ID: "b1", Title: "열린 블로커", OpenedAt: "2026-05-20T10:04:00Z", Status: "open"},
+			{ID: "b2", Title: "해결 블로커", OpenedAt: "2026-05-20T10:06:00Z", Status: "resolved"},
+		},
+		DecisionEvidenceLinks: []views.DecisionEvidenceLink{
+			{DecisionEntryID: "e2", EvidenceEntryID: "e3"},
+		},
+		DecisionStates: []views.DecisionState{
+			{DecisionEntryID: "e2", Status: "accepted"},
+			{DecisionEntryID: "e5", Status: "superseded"},
 		},
 	}
 	got := views.RenderReport(data)
+	if strings.Contains(got, "Phase B4") {
+		t.Errorf("RenderReport: should not render placeholder copy; got:\n%s", got)
+	}
 	// Must include counts for sessions/turns/entries.
 	if !strings.Contains(got, "세션") {
 		t.Error("RenderReport: missing 세션 count")
@@ -481,6 +502,11 @@ func TestRenderReport_WithData(t *testing.T) {
 	}
 	if !strings.Contains(got, "블로커") {
 		t.Error("RenderReport: missing blocker sub-count")
+	}
+	for _, want := range []string{"완료 턴: 1", "진행 중: 1", "평균 완료 시간: 2m 00s", "accepted 1", "superseded 1", "근거 연결 결정: 1/2 (50%)", "열린 블로커: 1", "해결됨: 1"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("RenderReport: missing %q in:\n%s", want, got)
+		}
 	}
 }
 
