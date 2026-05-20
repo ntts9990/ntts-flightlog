@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	appVersion  string
-	agentFlag   string // --agent <name> global override
+	appVersion string
+	agentFlag  string // --agent <name> global override
 )
 
 // rootCmd is the top-level command: `flightlog`.
@@ -57,6 +57,7 @@ func init() {
 		newViewCmd(),
 		newMigrateCmd(),
 		newReportCmd(),
+		newAgentStatsCmd(),
 		newRefreshAnchorCmd(),
 		newDriftCheckCmd(),
 		newSelfUpgradeCmd(),

@@ -207,10 +207,17 @@ jobs:
 
   # ── Lint evidence doc (Phase E — skipped until file lands) ───────────────
   lint-evidence-doc:
-    name: Lint evidence doc
+    name: Lint Phase E docs
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+      - name: Check alpha journal if present
+        run: |
+          if [ -f ".omc/specs/alpha-dogfood-log.md" ]; then
+            bash scripts/lint_alpha_journal.sh .omc/specs/alpha-dogfood-log.md
+          else
+            echo ".omc/specs/alpha-dogfood-log.md absent — skipping"
+          fi
       - name: Check evidence doc if present
         run: |
           if [ -f "docs/v2-ga-acceptance-evidence.md" ]; then

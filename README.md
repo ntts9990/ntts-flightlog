@@ -1,18 +1,20 @@
 # NTTS Flightlog
 
-NTTS Flightlog is a small terminal companion that keeps a concise live task log in a tmux side pane while any CLI coding agent works. It is agent-agnostic and ships with skill packages for **Claude Code**, **Codex**, and **Gemini CLI**, plus a standalone `ntts-flightlog` CLI you can drive from any shell.
+NTTS Flightlog is a local-first terminal companion for long-running AI coding sessions. It records turns, decisions, evidence, blockers, and agent context into SQLite, mirrors a readable `main.md`, and can keep the current worklog visible in a tmux side pane.
 
-It is built for long-running AI coding sessions where chat scrollback gets noisy. Flightlog keeps the important state visible:
+The project is agent-agnostic: it works with **Claude Code**, **Codex**, **Gemini CLI**, or any shell workflow. Agent-specific skill packages are included only to make startup natural inside each agent.
+
+Flightlog keeps the important state visible:
 
 - current mode: `solo`, `ralph`, `team`, `plan`, `review`, `autopilot`, or `other`
-- current focus and next step
+- current focus, next step, and turn intent anchors
 - turn start/end with elapsed time
 - decisions, evidence, blockers, and milestones
+- five local metrics for retrospective review
 - Korean-first pane output
-- flicker-free redraw: only repaints when `main.md` mtime actually changes
-- pinned menu header at top, no scrollback accumulation across redraws
+- pinned tmux menu header with no scrollback accumulation
 
-Runtime dependencies: `bash`, `tmux`, `awk` (always available on macOS/Linux). Optional: `glow` (alternative renderer). No dependency on Codex CLI, Claude Code, Gemini CLI, oh-my-codex, or oh-my-claudecode — the skills are loaded by their respective agents, but the script itself is just bash.
+Runtime dependencies for the CLI are bundled in the Go binary. The live side pane requires `tmux`; install scripts use standard shell tools. Flightlog does not send telemetry or require cloud services.
 
 ## Preview
 
@@ -43,7 +45,7 @@ Runtime dependencies: `bash`, `tmux`, `awk` (always available on macOS/Linux). O
 
 ## Install
 
-One install script handles every supported agent. By default it auto-detects which agent directories already exist (`~/.codex`, `~/.claude`, `~/.gemini`) and installs the skill into each, plus the CLI to `~/.local/bin`.
+One install script handles every supported agent. By default it auto-detects existing agent directories (`~/.codex`, `~/.claude`, `~/.gemini`) and installs the skill package into each. It also installs the CLI to `~/.local/bin` when a GitHub release is available.
 
 ```bash
 git clone https://github.com/ntts9990/ntts-flightlog.git
@@ -81,18 +83,13 @@ Run commands from the repository root you want to log.
 ```bash
 ntts-flightlog auto
 ntts-flightlog mode ralph "Ralph 단일-owner 검증 루프"
-ntts-flightlog turn-start "배포 실패 원인 조사"
+ntts-flightlog turn-start "배포 실패 원인 조사" \
+  --intent "재현 가능한 원인 찾기" \
+  --constraints "프로덕션 변경 금지,로그 기반 판단" \
+  --done-when "원인과 검증 명령이 기록됨"
 ntts-flightlog decision "API만 재배포" "worker 변경 없음"
 ntts-flightlog evidence "pytest 통과" "73개 테스트 통과"
 ntts-flightlog turn-end "배포 smoke 검증 완료"
-```
-
-If the CLI is not on PATH, call the skill script directly. Path depends on which agent installed it:
-
-```bash
-~/.claude/skills/ntts-flightlog/scripts/flightlog.sh auto   # Claude Code
-~/.codex/skills/ntts-flightlog/scripts/flightlog.sh auto    # Codex
-~/.gemini/skills/ntts-flightlog/scripts/flightlog.sh auto   # Gemini CLI
 ```
 
 ## Commands
@@ -103,16 +100,34 @@ ntts-flightlog start [title]
 ntts-flightlog stop
 ntts-flightlog status <label> [focus] [next]
 ntts-flightlog mode <solo|ralph|team|plan|review|autopilot|other> [detail]
-ntts-flightlog turn-start <title>
+ntts-flightlog turn-start <title> [--intent text] [--constraints a,b] [--done-when text]
 ntts-flightlog turn-end [summary]
 ntts-flightlog entry <title> [detail]
 ntts-flightlog decision <title> [detail]
 ntts-flightlog evidence <title> [detail]
 ntts-flightlog blocker <title> [detail]
+ntts-flightlog report [--format text|json] [--window day|week|all] [--agent name]
+ntts-flightlog agent-stats [--format text|json] [--window day|week|all] [--agent name]
+ntts-flightlog refresh-anchor [turn_id]
+ntts-flightlog drift-check [turn_id]
 ntts-flightlog path                                  # absolute path of main worklog file
 ntts-flightlog turn-path [N]                         # absolute path of turn N (default: latest)
-ntts-flightlog view <flat|turns|decisions|blockers>  # one-shot ANSI render
+ntts-flightlog view <flat|turns|decisions|blockers|tui>
+ntts-flightlog migrate
+ntts-flightlog self-upgrade
 ```
+
+## Metrics
+
+`ntts-flightlog report` computes five local metrics:
+
+1. turn duration
+2. blocker accumulation
+3. agent completion rate
+4. agent blocker frequency
+5. evidence-bound decision ratio
+
+Use `ntts-flightlog agent-stats` to inspect Phase E agent attribution health, including `auto_detect_unknown_rate` and `override_rate`.
 
 ## Views and clickable turns
 
@@ -135,11 +150,10 @@ Turn-start titles in the pane are OSC 8 hyperlinks. cmd/ctrl-click in iTerm2, We
 ## Environment
 
 ```text
-WORKLOG_DIR       default: .ntts-flightlog (or .omx/worklog if it already exists, for BC)
+WORKLOG_DIR       default: .ntts-flightlog
 WORKLOG_FILE      default: ${WORKLOG_DIR}/main.md
 REFRESH_SECONDS   default: 2
 PANE_PERCENT      default: 34
-WORKLOG_RENDERER  default: color; set to glow to use glow when installed
 ```
 
 ## Distribution Layout
@@ -147,13 +161,37 @@ WORKLOG_RENDERER  default: color; set to glow to use glow when installed
 ```
 skill/ntts-flightlog/     # Agent skill package (shared by Codex, Claude Code, Gemini)
   SKILL.md                # Agent-facing description
-  scripts/flightlog.sh    # Main script (self-contained)
   references/             # Design notes
   agents/openai.yaml      # Codex-specific UI metadata (ignored by other agents)
-bin/ntts-flightlog        # Standalone CLI (identical to scripts/flightlog.sh)
-scripts/install.sh        # Multi-agent installer
+cmd/flightlog/            # Go CLI entrypoint
+internal/                 # CLI, DB, TUI, metrics, migration, and agent detection packages
+e2e/                      # End-to-end tests
+testdata/                 # Fixtures and golden files
+scripts/install.sh        # Multi-agent installer and release downloader
 scripts/install-from-github.sh  # curl|bash bootstrap
 ```
+
+## Development
+
+```bash
+go test ./...
+go test ./... -race -count=1
+go test ./e2e -tags=e2e -count=1
+go test ./e2e -tags='e2e tmux' -run TestTmux -count=1
+go build -ldflags "-s -w" -o dist/flightlog ./cmd/flightlog
+```
+
+For local 3-agent sanity checks:
+
+```bash
+scripts/sanity_3_agents_tmux.sh
+```
+
+The check writes `docs/e0-3-agent-tmux-sanity.md` and verifies `claude`, `codex`, and `gemini` inside tmux panes when those CLIs are installed.
+
+## Privacy and Scope
+
+All state is written under `.ntts-flightlog/` in the repository where you run the CLI. Metrics stay local in SQLite. Generated worklogs, runtime state, build artifacts, and coverage files are intentionally ignored by git.
 
 ## License
 
