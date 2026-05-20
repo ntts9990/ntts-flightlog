@@ -40,6 +40,7 @@ func RenderDecisions(data *WorklogData) string {
 		found = true
 		fmt.Fprintf(&sb, "%s%s◆ %s  [decision]%s\n", Bold, ColorDecision, e.CreatedAt, Reset)
 		fmt.Fprintf(&sb, "%s%s  %s%s\n", Bold, ColorDecision, e.Title, Reset)
+		fmt.Fprintf(&sb, "%s  id: %s%s\n", Dim, shortID(e.ID), Reset)
 		if e.TurnID.Valid {
 			if t, ok := turnByID[e.TurnID.String]; ok {
 				title := "(제목 없음)"
@@ -61,6 +62,13 @@ func RenderDecisions(data *WorklogData) string {
 		return "(결정 사항이 아직 없습니다. flightlog decision으로 기록하세요.)\n"
 	}
 	return sb.String()
+}
+
+func shortID(id string) string {
+	if len(id) <= 8 {
+		return id
+	}
+	return id[:8]
 }
 
 func sameTurnEvidenceCount(e Entry, evidenceByTurn map[string]int) int {

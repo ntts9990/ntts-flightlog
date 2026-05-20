@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ntts9990/ntts-flightlog/internal/db"
 	"github.com/ntts9990/ntts-flightlog/internal/worklog"
@@ -37,12 +38,16 @@ func newEvidenceCmd() *cobra.Command {
 				return err
 			}
 
-			// Optionally link to a decision entry by ID.
+			// Optionally link to a decision entry by ID or unique title fragment.
 			if linkDecision != "" {
+				decisionID, err := findDecisionEntryID(s, linkDecision)
+				if err != nil {
+					return err
+				}
 				const q = `INSERT OR IGNORE INTO decision_evidence_links
 					(decision_entry_id, evidence_entry_id, created_at)
 					VALUES (?, ?, ?)`
-				if _, err := s.store.Exec(q, linkDecision, evidenceID, now()); err != nil {
+				if _, err := s.store.Exec(q, decisionID, evidenceID, now()); err != nil {
 					return fmt.Errorf("link evidence to decision: %w", err)
 				}
 			}
@@ -50,6 +55,46 @@ func newEvidenceCmd() *cobra.Command {
 			return worklog.AppendEntry(s.cfg, db.KindEvidence, title, detail)
 		},
 	}
-	cmd.Flags().StringVar(&linkDecision, "link", "", "연결할 결정 항목 ID (decision entry ID)")
+	cmd.Flags().StringVar(&linkDecision, "link", "", "연결할 결정 항목 ID 또는 고유한 제목 일부")
 	return cmd
+}
+
+func findDecisionEntryID(s *session, query string) (string, error) {
+	const q = `SELECT id, title
+		FROM entries
+		WHERE kind = 'decision'
+		  AND (id = ? OR title = ? OR lower(title) LIKE '%' || lower(?) || '%')
+		ORDER BY created_at`
+	rows, err := s.store.Query(q, query, query, query)
+	if err != nil {
+		return "", fmt.Errorf("find decision: %w", err)
+	}
+	defer rows.Close()
+
+	type match struct {
+		id    string
+		title string
+	}
+	var matches []match
+	for rows.Next() {
+		var m match
+		if err := rows.Scan(&m.id, &m.title); err != nil {
+			return "", fmt.Errorf("find decision: scan: %w", err)
+		}
+		matches = append(matches, m)
+	}
+	if err := rows.Err(); err != nil {
+		return "", fmt.Errorf("find decision: %w", err)
+	}
+	if len(matches) == 0 {
+		return "", fmt.Errorf("결정 항목을 찾을 수 없습니다: %s", query)
+	}
+	if len(matches) > 1 {
+		var titles []string
+		for _, m := range matches {
+			titles = append(titles, m.title)
+		}
+		return "", fmt.Errorf("결정 항목이 여러 개 일치합니다: %s", strings.Join(titles, ", "))
+	}
+	return matches[0].id, nil
 }

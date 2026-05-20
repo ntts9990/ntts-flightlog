@@ -426,7 +426,7 @@ func TestDriftCheckCmd_ExplicitTurnID_NotFound(t *testing.T) {
 
 // ── evidence --link branch ────────────────────────────────────────────────
 
-// TestEvidenceCmd_WithLink exercises the INSERT OR IGNORE link branch.
+// TestEvidenceCmd_WithLink exercises decision lookup and link insertion.
 func TestEvidenceCmd_WithLink(t *testing.T) {
 	setupEnv(t)
 	if err := newStartCmd().RunE(newStartCmd(), []string{"근거 세션"}); err != nil {
@@ -435,12 +435,62 @@ func TestEvidenceCmd_WithLink(t *testing.T) {
 	if err := newTurnStartCmd().RunE(newTurnStartCmd(), []string{"근거 턴"}); err != nil {
 		t.Fatalf("turn-start: %v", err)
 	}
+	if err := newDecisionCmd().RunE(newDecisionCmd(), []string{"중요 아키텍처 결정"}); err != nil {
+		t.Fatalf("decision: %v", err)
+	}
 	cmd := newEvidenceCmd()
-	if err := cmd.Flags().Set("link", "fake-decision-id"); err != nil {
+	if err := cmd.Flags().Set("link", "아키텍처"); err != nil {
 		t.Fatalf("set link: %v", err)
 	}
-	// INSERT OR IGNORE: no error even with non-existent decision ID.
 	execRunE(t, cmd, false, "링크된 근거")
+
+	s, err := openSession()
+	if err != nil {
+		t.Fatalf("openSession: %v", err)
+	}
+	defer s.close()
+
+	var linkCount int
+	if err := s.store.QueryRow(`SELECT COUNT(*) FROM decision_evidence_links`).Scan(&linkCount); err != nil {
+		t.Fatalf("query links: %v", err)
+	}
+	if linkCount != 1 {
+		t.Fatalf("decision_evidence_links count = %d, want 1", linkCount)
+	}
+}
+
+func TestEvidenceCmd_WithMissingLink(t *testing.T) {
+	setupEnv(t)
+	if err := newStartCmd().RunE(newStartCmd(), []string{"근거 누락 세션"}); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	cmd := newEvidenceCmd()
+	if err := cmd.Flags().Set("link", "없는 결정"); err != nil {
+		t.Fatalf("set link: %v", err)
+	}
+	if err := cmd.RunE(cmd, []string{"링크 실패 근거"}); err == nil {
+		t.Fatal("evidence --link should fail when no decision matches")
+	}
+}
+
+func TestEvidenceCmd_WithAmbiguousLink(t *testing.T) {
+	setupEnv(t)
+	if err := newStartCmd().RunE(newStartCmd(), []string{"근거 모호성 세션"}); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if err := newDecisionCmd().RunE(newDecisionCmd(), []string{"API 유지"}); err != nil {
+		t.Fatalf("decision 1: %v", err)
+	}
+	if err := newDecisionCmd().RunE(newDecisionCmd(), []string{"API 변경"}); err != nil {
+		t.Fatalf("decision 2: %v", err)
+	}
+	cmd := newEvidenceCmd()
+	if err := cmd.Flags().Set("link", "API"); err != nil {
+		t.Fatalf("set link: %v", err)
+	}
+	if err := cmd.RunE(cmd, []string{"모호한 근거"}); err == nil {
+		t.Fatal("evidence --link should reject ambiguous decision matches")
+	}
 }
 
 // ── migrate extra branches ────────────────────────────────────────────────

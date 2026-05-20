@@ -375,6 +375,9 @@ func TestRenderDecisions_WithDecisions(t *testing.T) {
 	if !strings.Contains(got, "결정 근거") {
 		t.Error("RenderDecisions: missing decision detail")
 	}
+	if !strings.Contains(got, "id: e2") {
+		t.Errorf("RenderDecisions: missing short ID; got:\n%s", got)
+	}
 	if strings.Contains(got, "일반") {
 		t.Error("RenderDecisions: should not include non-decision entry")
 	}
