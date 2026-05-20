@@ -1,0 +1,36 @@
+ntts-flightlog v2: a static Go binary that records session turns,
+entries, decisions, evidence, and blockers into SQLite and mirrors
+progress to .ntts-flightlog/main.md for v1 compatibility.
+
+Usage:
+  flightlog [command]
+
+Available Commands:
+  auto           세션을 자동으로 시작하거나 재시작합니다
+  blocker        블로커를 기록합니다
+  completion     Generate the autocompletion script for the specified shell
+  decision       결정 사항을 기록합니다
+  drift-check    현재 턴 항목이 제약 조건과 일치하는지 확인합니다
+  entry          작업 기록을 추가합니다
+  evidence       근거/증거를 기록합니다
+  help           Help about any command
+  migrate        데이터베이스 스키마 마이그레이션을 실행합니다
+  mode           현재 작업 모드를 설정합니다
+  path           워크로그 디렉토리 절대 경로를 출력합니다
+  refresh-anchor 현재 턴의 Intent Anchor를 stdout에 출력하고 갱신 시각을 기록합니다
+  report         5개 메트릭 분석 리포트를 출력합니다
+  self-upgrade   Upgrade flightlog to the latest GitHub release
+  start          새 세션을 시작합니다
+  status         현재 세션 상태를 업데이트합니다
+  stop           현재 세션을 종료합니다
+  turn-end       현재 턴을 종료합니다
+  turn-path      턴 N(또는 현재 턴)의 절대 경로를 출력합니다
+  turn-start     새 턴을 시작합니다
+  view           워크로그를 ANSI 색상으로 출력합니다
+
+Flags:
+      --agent string   override auto-detected agent name (e.g. claude, codex, gemini)
+  -h, --help           help for flightlog
+  -v, --version        version for flightlog
+
+Use "flightlog [command] --help" for more information about a command.

@@ -17,3 +17,8 @@ tmp/
 # Go build output
 /flightlog
 /dist/
+
+# Go test artifacts
+*.out
+*.test
+coverage.html

@@ -75,7 +75,7 @@ func maybeReminderAnchor(s *session) {
 	}
 	if entriesSince >= 5 {
 		fmt.Printf("\n⚓ ANCHOR REMINDER: %s\n\n", *intent)
-		_ = s.store.QueryRow(`UPDATE turns SET anchor_last_shown_at = ? WHERE id = ? RETURNING id`, now(), turnID)
+		_, _ = s.store.Exec(`UPDATE turns SET anchor_last_shown_at = ? WHERE id = ?`, now(), turnID)
 	}
 }
 

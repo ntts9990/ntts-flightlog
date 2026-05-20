@@ -1,0 +1,280 @@
+scenarios:
+  # ── S1-S7: Basic subcommand smoke ────────────────────────────────────────────
+
+  - name: S1
+    description: "start가 SQLite 세션 행과 main.md를 생성한다"
+    setup: []
+    invoke:
+      - [start, "P0-세션"]
+    expect_stdout_match: ""
+    expect_state_match:
+      file_exists: "main.md"
+      sqlite_query: "SELECT COUNT(*) FROM sessions"
+      sqlite_expect: "1"
+
+  - name: S2
+    description: "stop이 sessions.ended_at을 설정한다"
+    setup:
+      - [start, "P0-세션"]
+    invoke:
+      - [stop]
+    expect_state_match:
+      sqlite_query: "SELECT COUNT(*) FROM sessions WHERE ended_at IS NOT NULL"
+      sqlite_expect: "1"
+
+  - name: S3
+    description: "turn-start가 status='active' 턴 행을 생성한다"
+    setup:
+      - [start, "P0-세션"]
+    invoke:
+      - [turn-start, "첫 번째 턴"]
+    expect_state_match:
+      sqlite_query: "SELECT COUNT(*) FROM turns WHERE status='active'"
+      sqlite_expect: "1"
+
+  - name: S4
+    description: "turn-end가 turns.status를 'complete'로 전환한다"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "테스트 턴"]
+    invoke:
+      - [turn-end, "턴 완료"]
+    expect_state_match:
+      sqlite_query: "SELECT COUNT(*) FROM turns WHERE status='complete'"
+      sqlite_expect: "1"
+
+  - name: S5
+    description: "entry가 kind='entry' 항목을 SQLite에 저장한다"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "테스트 턴"]
+    invoke:
+      - [entry, "작업 항목 A"]
+    expect_state_match:
+      sqlite_query: "SELECT COUNT(*) FROM entries WHERE kind='entry'"
+      sqlite_expect: "1"
+
+  - name: S6
+    description: "decision이 kind='decision' 항목을 SQLite에 저장한다"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "테스트 턴"]
+    invoke:
+      - [decision, "결정 항목 A"]
+    expect_state_match:
+      sqlite_query: "SELECT COUNT(*) FROM entries WHERE kind='decision'"
+      sqlite_expect: "1"
+
+  - name: S7
+    description: "evidence가 kind='evidence' 항목을 SQLite에 저장한다"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "테스트 턴"]
+    invoke:
+      - [evidence, "근거 항목 A"]
+    expect_state_match:
+      sqlite_query: "SELECT COUNT(*) FROM entries WHERE kind='evidence'"
+      sqlite_expect: "1"
+
+  # ── S8: stop/restart continuity ──────────────────────────────────────────────
+
+  - name: S8
+    description: "stop 후 재시작 시 main.md에 새 항목이 덧붙여진다 (덮어쓰기 금지)"
+    setup:
+      - [start, "P0-세션-1"]
+      - [entry, "FIRST_ENTRY"]
+      - [stop]
+      - [start, "P0-세션-2"]
+    invoke:
+      - [entry, "SECOND_ENTRY"]
+    expect_state_match:
+      file_contains_all:
+        - "FIRST_ENTRY"
+        - "SECOND_ENTRY"
+      sqlite_query: "SELECT COUNT(*) FROM entries WHERE kind='entry'"
+      sqlite_expect: "2"
+
+  # ── S9: multiple modes in one turn ───────────────────────────────────────────
+
+  - name: S9
+    description: "단일 턴 내 모드 여러 번 전환 — 두 mode 항목 모두 기록된다"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "멀티 모드 턴"]
+      - [mode, "planA"]
+      - [entry, "계획 항목"]
+      - [mode, "planB"]
+      - [entry, "실행 항목"]
+    invoke:
+      - [turn-end, "멀티 모드 완료"]
+    expect_state_match:
+      sqlite_query: "SELECT COUNT(*) FROM entries WHERE kind='mode'"
+      sqlite_expect: "2"
+
+  # ── S10-S26: Extended scenarios ───────────────────────────────────────────────
+
+  - name: S10
+    description: "blocker 명령이 blockers 테이블에 status='open' 행을 생성한다"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "테스트 턴"]
+    invoke:
+      - [blocker, "API 응답 대기 중"]
+    expect_state_match:
+      sqlite_query: "SELECT COUNT(*) FROM blockers WHERE status='open'"
+      sqlite_expect: "1"
+
+  - name: S11
+    description: "blocker 명령이 entries 테이블에도 kind='blocker' 행을 생성한다"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "테스트 턴"]
+    invoke:
+      - [blocker, "외부 서비스 장애"]
+    expect_state_match:
+      sqlite_query: "SELECT COUNT(*) FROM entries WHERE kind='blocker'"
+      sqlite_expect: "1"
+
+  - name: S12
+    description: "mode 명령이 sessions.mode 컬럼을 업데이트한다"
+    setup:
+      - [start, "P0-세션"]
+    invoke:
+      - [mode, "coding"]
+    expect_state_match:
+      sqlite_query: "SELECT mode FROM sessions ORDER BY rowid DESC LIMIT 1"
+      sqlite_expect: "coding"
+
+  - name: S13
+    description: "turn-end 후 turns.elapsed_ms 가 0 이상으로 기록된다"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "경과 테스트 턴"]
+    invoke:
+      - [turn-end, "경과 기록 완료"]
+    expect_state_match:
+      sqlite_query: "SELECT elapsed_ms >= 0 FROM turns WHERE status='complete'"
+      sqlite_expect: "1"
+
+  - name: S14
+    description: "--agent 플래그가 sessions.agent_override 컬럼에 저장된다"
+    setup: []
+    invoke:
+      - ["--agent", "claude", start, "에이전트 오버라이드 테스트"]
+    expect_state_match:
+      sqlite_query: "SELECT agent_override FROM sessions ORDER BY rowid DESC LIMIT 1"
+      sqlite_expect: "claude"
+
+  - name: S15
+    description: "turn-start --intent --constraints --done-when 앵커 플래그가 DB에 저장된다"
+    setup:
+      - [start, "P0-세션"]
+    invoke:
+      - [turn-start, "--intent", "버그 수정", "--constraints", "테스트만", "--done-when", "CI 통과", "앵커 턴"]
+    expect_state_match:
+      sqlite_query: "SELECT intent FROM turns WHERE intent IS NOT NULL ORDER BY rowid DESC LIMIT 1"
+      sqlite_expect: "버그 수정"
+
+  - name: S16
+    description: "refresh-anchor가 intent 블록을 stdout에 출력한다"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "--intent", "리팩터링 진행", "앵커 갱신 턴"]
+    invoke:
+      - [refresh-anchor]
+    expect_stdout_match: "리팩터링 진행"
+
+  - name: S17
+    description: "drift-check 양성 — 제약 키워드 미포함 항목에서 드리프트 감지"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "--constraints", "sql_only", "드리프트 테스트 턴"]
+      - [entry, "curl 테스트 실행"]
+    invoke:
+      - [drift-check]
+    expect_stdout_match: "드리프트 감지"
+
+  - name: S18
+    description: "drift-check 음성 — 제약 키워드 포함 항목은 드리프트 없음"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "--constraints", "sql_only", "정상 턴"]
+      - [entry, "sql_only 쿼리 실행"]
+    invoke:
+      - [drift-check]
+    expect_stdout_match: "드리프트 없음"
+
+  - name: S19
+    description: "migrate up이 schema applied 메시지를 출력한다"
+    setup: []
+    invoke:
+      - [migrate, up]
+    expect_stdout_match: "schema applied"
+
+  - name: S20
+    description: "report --format json이 유효한 JSON을 출력하고 generated_at 키를 포함한다"
+    setup:
+      - [start, "P0-세션"]
+    invoke:
+      - [report, "--format", json]
+    expect_stdout_match: "generated_at"
+
+  - name: S21
+    description: "view tui --noninteractive가 exit 0으로 종료한다"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "TUI 테스트 턴"]
+      - [entry, "TUI 항목"]
+    invoke:
+      - [view, tui, "--noninteractive"]
+    expect_stdout_match: ""
+
+  - name: S22
+    description: "evidence --link가 decision_evidence_links 행을 생성한다"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "링크 테스트 턴"]
+      - [decision, "결정 항목 링크"]
+    pre_invoke_db_query: "SELECT id FROM entries WHERE kind='decision' ORDER BY rowid DESC LIMIT 1"
+    invoke_template: [evidence, "근거 항목", "--link", "{0}"]
+    expect_state_match:
+      sqlite_query: "SELECT COUNT(*) FROM decision_evidence_links"
+      sqlite_expect: "1"
+
+  - name: S23
+    description: "turn-path가 현재 턴의 마크다운 파일 경로를 출력한다"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "경로 테스트 턴"]
+    invoke:
+      - [turn-path]
+    expect_stdout_match: "turn-1.md"
+
+  - name: S24
+    description: "path가 main.md 절대 경로를 출력한다"
+    setup:
+      - [start, "P0-세션"]
+    invoke:
+      - [path]
+    expect_stdout_match: "main.md"
+
+  - name: S25
+    description: "--agent 오버라이드가 entries.agent_id 컬럼에 전파된다"
+    setup:
+      - ["--agent", "codex", start, "에이전트 전파 세션"]
+      - ["--agent", "codex", turn-start, "에이전트 전파 턴"]
+    invoke:
+      - ["--agent", "codex", entry, "코덱스 작업 항목"]
+    expect_state_match:
+      sqlite_query: "SELECT COUNT(*) FROM entries WHERE agent_id='codex'"
+      sqlite_expect: "1"
+
+  - name: S26
+    description: "view flat이 main.md 워크로그 내용을 렌더링한다"
+    setup:
+      - [start, "P0-세션"]
+      - [turn-start, "렌더링 턴"]
+      - [entry, "RENDER_CHECK_ENTRY"]
+    invoke:
+      - [view, flat]
+    expect_stdout_match: "RENDER_CHECK_ENTRY"

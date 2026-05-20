@@ -188,6 +188,19 @@ func TestFetchLatestRelease_HTTPError(t *testing.T) {
 	}
 }
 
+func TestFetchLatestRelease_EmptyTagName(t *testing.T) {
+	// Server returns valid JSON but tag_name is empty → error.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, `{"tag_name":"","assets":[]}`)
+	}))
+	defer srv.Close()
+
+	_, err := fetchLatestRelease(srv.URL)
+	if err == nil {
+		t.Error("fetchLatestRelease empty tag: expected error")
+	}
+}
+
 // ─── mock HTTP server: runSelfUpgrade flows ───────────────────────────────────
 
 func testCmd() (*cobra.Command, *strings.Builder) {
@@ -375,6 +388,110 @@ func TestRunSelfUpgrade_BrewRefusal(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "brew upgrade") {
 		t.Errorf("expected brew upgrade message, got: %s", out.String())
+	}
+}
+
+// ─── downloadToTemp ───────────────────────────────────────────────────────────
+
+func TestDownloadToTemp_HappyPath(t *testing.T) {
+	content := []byte("fake-archive-content")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(content)
+	}))
+	defer srv.Close()
+
+	path, err := downloadToTemp(srv.URL)
+	if err != nil {
+		t.Fatalf("downloadToTemp: %v", err)
+	}
+	defer os.Remove(path)
+
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read downloaded file: %v", err)
+	}
+	if !bytes.Equal(got, content) {
+		t.Errorf("content mismatch: got %q, want %q", got, content)
+	}
+}
+
+func TestDownloadToTemp_HTTP500(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "server error", http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	_, err := downloadToTemp(srv.URL)
+	if err == nil {
+		t.Error("downloadToTemp HTTP 500: expected error")
+	}
+}
+
+// ─── verifyChecksum ───────────────────────────────────────────────────────────
+
+func TestVerifyChecksum_Match(t *testing.T) {
+	content := []byte("real archive bytes")
+	h := sha256.Sum256(content)
+	checksum := hex.EncodeToString(h[:])
+
+	f, err := os.CreateTemp(t.TempDir(), "archive-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Write(content); err != nil {
+		f.Close()
+		t.Fatal(err)
+	}
+	f.Close()
+
+	filename := "flightlog_1.0.0_linux_amd64.tar.gz"
+	checksumData := checksum + "  " + filename + "\n"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, checksumData)
+	}))
+	defer srv.Close()
+
+	if err := verifyChecksum(f.Name(), filename, srv.URL); err != nil {
+		t.Errorf("verifyChecksum match: %v", err)
+	}
+}
+
+func TestVerifyChecksum_Mismatch(t *testing.T) {
+	content := []byte("real content")
+	f, err := os.CreateTemp(t.TempDir(), "archive-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Write(content); err != nil {
+		f.Close()
+		t.Fatal(err)
+	}
+	f.Close()
+
+	filename := "flightlog_1.0.0_linux_amd64.tar.gz"
+	wrongChecksum := strings.Repeat("0", 64)
+	checksumData := wrongChecksum + "  " + filename + "\n"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, checksumData)
+	}))
+	defer srv.Close()
+
+	err = verifyChecksum(f.Name(), filename, srv.URL)
+	if err == nil {
+		t.Error("verifyChecksum mismatch: expected error")
+	}
+}
+
+func TestVerifyChecksum_HTTP404(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	err := verifyChecksum("/tmp/file", "test.tar.gz", srv.URL)
+	if err == nil {
+		t.Error("verifyChecksum 404: expected error")
 	}
 }
 
