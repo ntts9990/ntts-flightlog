@@ -8,8 +8,10 @@ package cli
 // so that the DB state required by each command is already present.
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -131,7 +133,16 @@ func TestReportCmd_DayWindow(t *testing.T) {
 
 func TestDoctorCmd(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newDoctorCmd(), false)
+	cmd := newDoctorCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	execRunE(t, cmd, false)
+	got := out.String()
+	for _, want := range []string{"NTTS Flightlog doctor", "binary:", "db: ok", "migrations:", "tmux_pane:", "skill_wrappers:"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("doctor output missing %q in:\n%s", want, got)
+		}
+	}
 }
 
 // TestViewCmd_AllModes exercises all one-shot view modes.

@@ -357,6 +357,30 @@ func TestFormatText_WithEvidenceBound(t *testing.T) {
 	}
 }
 
+func TestDescribeSkillWrapper(t *testing.T) {
+	dir := t.TempDir()
+	missing := filepath.Join(dir, "missing.sh")
+	if got := describeSkillWrapper(missing); got != "not installed" {
+		t.Errorf("describe missing wrapper = %q", got)
+	}
+
+	wrapper := filepath.Join(dir, "flightlog.sh")
+	if err := os.WriteFile(wrapper, []byte("NTTS_FLIGHTLOG_BIN\ncommand -v ntts-flightlog\nexec\n"), 0o755); err != nil {
+		t.Fatalf("write wrapper: %v", err)
+	}
+	if got := describeSkillWrapper(wrapper); got != "delegates to Go CLI" {
+		t.Errorf("describe delegating wrapper = %q", got)
+	}
+
+	legacy := filepath.Join(dir, "legacy.sh")
+	if err := os.WriteFile(legacy, []byte("echo legacy\n"), 0o755); err != nil {
+		t.Fatalf("write legacy wrapper: %v", err)
+	}
+	if got := describeSkillWrapper(legacy); got != "installed but delegation pattern not recognized" {
+		t.Errorf("describe legacy wrapper = %q", got)
+	}
+}
+
 // ── openSession (requires WORKLOG_DIR) ─────────────────────────────────────
 
 func TestOpenSession_TempDir(t *testing.T) {
