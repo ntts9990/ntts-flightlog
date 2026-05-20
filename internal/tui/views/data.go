@@ -58,6 +58,7 @@ type Blocker struct {
 	ClosedAt           sql.NullString
 	Status             string
 	AccumulatedSeconds int64
+	ResolutionNote     sql.NullString
 }
 
 // DecisionEvidenceLink represents an explicit decision→evidence relationship.
@@ -175,7 +176,7 @@ func loadEntries(d *db.DB) ([]Entry, error) {
 func loadBlockers(d *db.DB) ([]Blocker, error) {
 	rows, err := d.Query(`
 		SELECT id, turn_id, entry_id, title, opened_at, closed_at,
-		       status, accumulated_seconds
+		       status, accumulated_seconds, resolution_note
 		FROM blockers ORDER BY status, opened_at`)
 	if err != nil {
 		return nil, err
@@ -186,7 +187,7 @@ func loadBlockers(d *db.DB) ([]Blocker, error) {
 		var b Blocker
 		if err := rows.Scan(
 			&b.ID, &b.TurnID, &b.EntryID, &b.Title, &b.OpenedAt,
-			&b.ClosedAt, &b.Status, &b.AccumulatedSeconds,
+			&b.ClosedAt, &b.Status, &b.AccumulatedSeconds, &b.ResolutionNote,
 		); err != nil {
 			return nil, err
 		}

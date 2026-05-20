@@ -52,6 +52,7 @@ func init() {
 		newDecisionCmd(),
 		newEvidenceCmd(),
 		newBlockerCmd(),
+		newBlockerResolveCmd(),
 		newPathCmd(),
 		newTurnPathCmd(),
 		newViewCmd(),

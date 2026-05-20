@@ -491,6 +491,77 @@ func TestBlockerCmd_WithDetail(t *testing.T) {
 	execRunE(t, newBlockerCmd(), false, "블로커 제목", "블로커 상세 내용")
 }
 
+func TestBlockerResolveCmd_ByTitle(t *testing.T) {
+	setupEnv(t)
+	if err := newStartCmd().RunE(newStartCmd(), []string{"블로커 해결 세션"}); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if err := newTurnStartCmd().RunE(newTurnStartCmd(), []string{"블로커 해결 턴"}); err != nil {
+		t.Fatalf("turn-start: %v", err)
+	}
+	if err := newBlockerCmd().RunE(newBlockerCmd(), []string{"빌드 실패", "테스트가 막힘"}); err != nil {
+		t.Fatalf("blocker: %v", err)
+	}
+	if err := newBlockerResolveCmd().RunE(newBlockerResolveCmd(), []string{"빌드 실패", "의존성 복구"}); err != nil {
+		t.Fatalf("blocker-resolve: %v", err)
+	}
+
+	s, err := openSession()
+	if err != nil {
+		t.Fatalf("openSession: %v", err)
+	}
+	defer s.close()
+
+	var status string
+	var closedAt *string
+	var accumulatedSeconds int64
+	var resolutionNote *string
+	if err := s.store.QueryRow(
+		`SELECT status, closed_at, accumulated_seconds, resolution_note FROM blockers WHERE title = ?`,
+		"빌드 실패",
+	).Scan(&status, &closedAt, &accumulatedSeconds, &resolutionNote); err != nil {
+		t.Fatalf("query blocker: %v", err)
+	}
+	if status != "resolved" {
+		t.Fatalf("blocker status = %q, want resolved", status)
+	}
+	if closedAt == nil || *closedAt == "" {
+		t.Fatal("resolved blocker should have closed_at")
+	}
+	if accumulatedSeconds < 0 {
+		t.Fatalf("accumulatedSeconds = %d, want >= 0", accumulatedSeconds)
+	}
+	if resolutionNote == nil || *resolutionNote != "의존성 복구" {
+		t.Fatalf("resolutionNote = %v, want 의존성 복구", resolutionNote)
+	}
+
+	var evidenceCount int
+	if err := s.store.QueryRow(
+		`SELECT COUNT(*) FROM entries WHERE kind = 'evidence' AND title LIKE '블로커 해결:%'`,
+	).Scan(&evidenceCount); err != nil {
+		t.Fatalf("query evidence count: %v", err)
+	}
+	if evidenceCount != 1 {
+		t.Fatalf("resolution evidence count = %d, want 1", evidenceCount)
+	}
+}
+
+func TestBlockerResolveCmd_AmbiguousTitle(t *testing.T) {
+	setupEnv(t)
+	if err := newStartCmd().RunE(newStartCmd(), []string{"블로커 모호성 세션"}); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if err := newBlockerCmd().RunE(newBlockerCmd(), []string{"API 실패"}); err != nil {
+		t.Fatalf("blocker 1: %v", err)
+	}
+	if err := newBlockerCmd().RunE(newBlockerCmd(), []string{"API 지연"}); err != nil {
+		t.Fatalf("blocker 2: %v", err)
+	}
+	if err := newBlockerResolveCmd().RunE(newBlockerResolveCmd(), []string{"API"}); err == nil {
+		t.Fatal("blocker-resolve should reject ambiguous title matches")
+	}
+}
+
 // ── evidence with detail ──────────────────────────────────────────────────
 
 // TestEvidenceCmd_WithDetail exercises the 2-arg detail branch of evidence.

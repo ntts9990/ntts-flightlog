@@ -78,6 +78,9 @@ func writeBlockerRow(sb *strings.Builder, b Blocker, entryByID map[string]Entry,
 	if b.ClosedAt.Valid && b.ClosedAt.String != "" {
 		fmt.Fprintf(sb, "%s  해결: %s%s\n", Dim, b.ClosedAt.String, Reset)
 	}
+	if b.ResolutionNote.Valid && b.ResolutionNote.String != "" {
+		fmt.Fprintf(sb, "%s  해결내용: %s%s\n", Dim, b.ResolutionNote.String, Reset)
+	}
 	if b.EntryID.Valid {
 		if e, ok := entryByID[b.EntryID.String]; ok && e.Detail.Valid && e.Detail.String != "" {
 			WriteDetail(sb, e.Detail.String)

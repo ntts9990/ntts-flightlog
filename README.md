@@ -178,8 +178,12 @@ go test ./...
 go test ./... -race -count=1
 go test ./e2e -tags=e2e -count=1
 go test ./e2e -tags='e2e tmux' -run TestTmux -count=1
-go build -ldflags "-s -w" -o dist/flightlog ./cmd/flightlog
+scripts/build-local.sh   # writes dist/local-current/ntts-flightlog
 ```
+
+Use `dist/local-current/ntts-flightlog` for local smoke tests. Release and CI
+artifacts may still use `dist/flightlog`; the explicit local folder prevents
+stale release-style binaries from being confused with the current dev build.
 
 For local 3-agent sanity checks:
 

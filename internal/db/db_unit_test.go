@@ -65,13 +65,13 @@ func TestMigrateIdempotent(t *testing.T) {
 		t.Error("Version empty after second Open")
 	}
 
-	// Schema must be intact: exactly 3 migrations recorded.
+	// Schema must be intact: exactly 4 migrations recorded.
 	var count int
 	if err := d2.QueryRow("SELECT COUNT(*) FROM _schema_migrations").Scan(&count); err != nil {
 		t.Fatalf("query _schema_migrations: %v", err)
 	}
-	if count != 3 {
-		t.Errorf("_schema_migrations count: got %d, want 3 (0001_init, 0002_turn_anchors, 0003_metric_views)", count)
+	if count != 4 {
+		t.Errorf("_schema_migrations count: got %d, want 4 (0001_init, 0002_turn_anchors, 0003_metric_views, 0004_blocker_resolution)", count)
 	}
 }
 
@@ -100,8 +100,8 @@ func TestOpenInMemoryMultiple(t *testing.T) {
 		if err := d.QueryRow("SELECT COUNT(*) FROM _schema_migrations").Scan(&cnt); err != nil {
 			t.Errorf("[%d] query _schema_migrations: %v", i, err)
 		}
-		if cnt != 3 {
-			t.Errorf("[%d] migration count = %d, want 3", i, cnt)
+		if cnt != 4 {
+			t.Errorf("[%d] migration count = %d, want 4", i, cnt)
 		}
 		_ = d.Close()
 	}
@@ -161,7 +161,7 @@ func TestMigrateTracksFilenames(t *testing.T) {
 		t.Fatalf("rows.Err: %v", err)
 	}
 
-	want := []string{"0001_init.sql", "0002_turn_anchors.sql", "0003_metric_views.sql"}
+	want := []string{"0001_init.sql", "0002_turn_anchors.sql", "0003_metric_views.sql", "0004_blocker_resolution.sql"}
 	if len(files) != len(want) {
 		t.Fatalf("migration files: got %v, want %v", files, want)
 	}
