@@ -6,8 +6,8 @@
 //
 // Every connection open applies three PRAGMAs (plan A2, locked at iter 2):
 //
-//	PRAGMA journal_mode=WAL       — enables concurrent readers + single writer
 //	PRAGMA busy_timeout=5000      — wait up to 5 s before SQLITE_BUSY
+//	PRAGMA journal_mode=WAL       — enables concurrent readers + single writer
 //	PRAGMA synchronous=NORMAL     — good durability/perf balance with WAL
 //
 // A single database/sql connection is used per process (MaxOpenConns=1).
@@ -71,8 +71,8 @@ func Open(dbPath string) (*DB, error) {
 // With MaxOpenConns=1 this covers the single shared connection.
 func applyPRAGMAs(db *sql.DB) error {
 	for _, pragma := range []string{
-		"PRAGMA journal_mode=WAL",
 		"PRAGMA busy_timeout=5000",
+		"PRAGMA journal_mode=WAL",
 		"PRAGMA synchronous=NORMAL",
 	} {
 		if _, err := db.Exec(pragma); err != nil {

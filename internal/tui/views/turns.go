@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// RenderTurns returns the turns view: each turn rendered as its own section.
-// Mirrors v1 awk per-turn markdown file rendering (RenderTurns in worklog/view.go).
+// RenderTurns returns a compact turn index. Unlike the flat live log, this view
+// summarizes each turn as a bounded work unit instead of repeating full entries.
 func RenderTurns(data *WorklogData, turnsDir string) string {
 	if data == nil || len(data.Turns) == 0 {
 		return "(turn 파일이 아직 없습니다. turn-start로 첫 턴을 시작하세요.)\n"
@@ -24,11 +24,8 @@ func RenderTurns(data *WorklogData, turnsDir string) string {
 		}
 	}
 
-	// Index sessions for turn context.
-	sessionByID := make(map[string]Session)
-	for _, s := range data.Sessions {
-		sessionByID[s.ID] = s
-	}
+	sb.WriteString(Bold + ColorSection + "## 턴 인덱스" + Reset + "\n")
+	sb.WriteString(Dim + "작업 단위별 상태, 신호, 마지막 결과를 요약합니다." + Reset + "\n\n")
 
 	for _, t := range data.Turns {
 		title := "(제목 없음)"
@@ -36,34 +33,70 @@ func RenderTurns(data *WorklogData, turnsDir string) string {
 			title = t.Title.String
 		}
 
-		// Turn file header (mirrors v1 per-turn .md: "# Turn N: title").
-		fmt.Fprintf(&sb, "%s%s# Turn %d: %s%s\n", Bold, ColorTitle, t.SequenceNo, title, Reset)
-		fmt.Fprintf(&sb, "%s시작: %s%s\n", Dim, t.StartedAt, Reset)
-		sb.WriteString("\n")
-
-		WriteTurnStart(&sb, t.StartedAt, t.SequenceNo, title, absTurns)
-		WriteTurnAnchor(&sb, t)
-
-		for _, e := range entriesByTurn[t.ID] {
-			WriteEntry(&sb, e.CreatedAt, e.Kind, e.Title)
-			if e.Detail.Valid && e.Detail.String != "" {
-				WriteDetail(&sb, e.Detail.String)
-			}
+		entries := entriesByTurn[t.ID]
+		counts := countEntriesByKind(entries)
+		result := "기록 없음"
+		if len(entries) > 0 {
+			result = entries[len(entries)-1].Title
+		} else if t.Status == "active" {
+			result = "진행 중"
 		}
 
-		if t.EndedAt.Valid && t.EndedAt.String != "" {
-			summary := "작업 턴 완료."
-			if es := entriesByTurn[t.ID]; len(es) > 0 {
-				last := es[len(es)-1]
-				if last.Kind == "entry" {
-					summary = last.Title
-				}
-			}
-			WriteTurnEnd(&sb, t.EndedAt.String, t.SequenceNo, summary)
+		color := TurnColorFor(t.SequenceNo)
+		url := fmt.Sprintf("file://%s/turn-%d.md", absTurns, t.SequenceNo)
+		status := t.Status
+		if status == "" {
+			status = "active"
+		}
+		elapsed := "진행 중"
+		if t.ElapsedMs.Valid {
+			elapsed = formatDurationMS(t.ElapsedMs.Int64)
+		} else if t.EndedAt.Valid {
+			elapsed = "완료"
 		}
 
+		fmt.Fprintf(&sb, "%s%s# Turn %d · %s · %s%s\n", Bold, color, t.SequenceNo, status, elapsed, Reset)
+		fmt.Fprintf(&sb, "%s%s  %s%s\n", Bold, color, osc8Link(url, title), Reset)
+		fmt.Fprintf(&sb, "%s  시작: %s%s\n", Dim, t.StartedAt, Reset)
+		fmt.Fprintf(&sb, "%s  신호: entry %d · decision %d · evidence %d · blocker %d%s\n",
+			Dim, counts["entry"], counts["decision"], counts["evidence"], counts["blocker"], Reset)
+		if t.Intent.Valid && t.Intent.String != "" {
+			fmt.Fprintf(&sb, "%s  의도: %s%s\n", Dim, t.Intent.String, Reset)
+		}
+		fmt.Fprintf(&sb, "%s  결과: %s%s\n", Dim, result, Reset)
 		sb.WriteString("\n")
 	}
 
 	return sb.String()
+}
+
+func countEntriesByKind(entries []Entry) map[string]int {
+	counts := map[string]int{
+		"entry":    0,
+		"decision": 0,
+		"evidence": 0,
+		"blocker":  0,
+		"mode":     0,
+	}
+	for _, e := range entries {
+		counts[e.Kind]++
+	}
+	return counts
+}
+
+func formatDurationMS(ms int64) string {
+	if ms < 0 {
+		ms = 0
+	}
+	totalSeconds := ms / 1000
+	hours := totalSeconds / 3600
+	minutes := (totalSeconds % 3600) / 60
+	seconds := totalSeconds % 60
+	if hours > 0 {
+		return fmt.Sprintf("%dh %02dm %02ds", hours, minutes, seconds)
+	}
+	if minutes > 0 {
+		return fmt.Sprintf("%dm %02ds", minutes, seconds)
+	}
+	return fmt.Sprintf("%ds", seconds)
 }

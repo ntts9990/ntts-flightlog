@@ -34,13 +34,14 @@ func newModeCmd() *cobra.Command {
 			}
 
 			// Update SQLite session mode.
-			sessionID := s.cfg.ActiveSessionID()
-			if sessionID != "" {
-				if _, err := s.store.Exec(
-					`UPDATE sessions SET mode = ? WHERE id = ?`, mode, sessionID,
-				); err != nil {
-					return err
-				}
+			sessionID, err := ensureActiveSession(s, "작업 기록", mode)
+			if err != nil {
+				return err
+			}
+			if _, err := s.store.Exec(
+				`UPDATE sessions SET mode = ? WHERE id = ?`, mode, sessionID,
+			); err != nil {
+				return err
 			}
 
 			// Append mode entry to main.md + turn file.

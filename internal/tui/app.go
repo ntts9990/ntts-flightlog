@@ -29,10 +29,10 @@ type viewID int
 
 const (
 	viewFlat      viewID = iota + 1 // 1 = flat worklog
-	viewTurns                        // 2 = grouped by turn
-	viewDecisions                    // 3 = decisions only
-	viewBlockers                     // 4 = blockers only
-	viewReport                       // 5 = metrics report (B4 placeholder)
+	viewTurns                       // 2 = grouped by turn
+	viewDecisions                   // 3 = decisions only
+	viewBlockers                    // 4 = blockers only
+	viewReport                      // 5 = metrics report (B4 placeholder)
 )
 
 // headerHeight is the number of lines consumed by the pinned menu (line + blank).
@@ -124,9 +124,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m = m.switchView(viewBlockers)
 		case "5":
 			m = m.switchView(viewReport)
-		case "r":
+		case "r", "ㄱ":
 			cmds = append(cmds, cmdLoad(m.d))
-		case "q", "ctrl+c":
+		case "q", "ㅂ", "ctrl+c":
 			return m, tea.Quit
 		}
 
@@ -203,9 +203,9 @@ func (m Model) switchView(v viewID) Model {
 // The active view label is underlined; others use the section color.
 func (m Model) menuHeader() string {
 	type label struct {
-		key   string
-		name  string
-		view  viewID
+		key  string
+		name string
+		view viewID
 	}
 	items := []label{
 		{"1", "flat", viewFlat},

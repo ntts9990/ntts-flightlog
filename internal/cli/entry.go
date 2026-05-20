@@ -81,11 +81,15 @@ func maybeReminderAnchor(s *session) {
 
 // insertEntry writes a single entry row to SQLite and returns its ID.
 func insertEntry(s *session, kind, title, detail string) (string, error) {
+	sessionID, err := ensureActiveSession(s, "작업 기록", "solo")
+	if err != nil {
+		return "", err
+	}
 	const q = `INSERT INTO entries (session_id, turn_id, kind, title, detail, created_at, agent_id)
 		VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id`
 	var id string
-	err := s.store.QueryRow(q,
-		nullStr(s.cfg.ActiveSessionID()),
+	err = s.store.QueryRow(q,
+		sessionID,
 		nullStr(s.cfg.ActiveTurnID()),
 		kind, title, nullStr(detail), now(), nullStr(s.agentID),
 	).Scan(&id)

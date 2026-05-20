@@ -200,6 +200,7 @@ func TestRenderTurns_WithTurns(t *testing.T) {
 		ID: "e1", SessionID: "s1", Kind: "entry", Title: "턴 항목",
 		CreatedAt: "2026-05-20T10:01:00Z",
 		TurnID:    sql.NullString{String: "t1", Valid: true},
+		Detail:    sql.NullString{String: "원문 상세는 턴 인덱스에서 숨김", Valid: true},
 	}
 	data := &views.WorklogData{
 		Sessions: []views.Session{{ID: "s1", StartedAt: "2026-05-20T10:00:00Z", Mode: "solo"}},
@@ -212,6 +213,12 @@ func TestRenderTurns_WithTurns(t *testing.T) {
 	}
 	if !strings.Contains(got, "턴 항목") {
 		t.Errorf("RenderTurns: missing entry title; got:\n%s", got)
+	}
+	if !strings.Contains(got, "신호: entry 1") {
+		t.Errorf("RenderTurns: missing signal counts; got:\n%s", got)
+	}
+	if strings.Contains(got, "원문 상세") {
+		t.Errorf("RenderTurns: should summarize, not repeat entry details; got:\n%s", got)
 	}
 }
 
@@ -294,6 +301,32 @@ func TestRenderBlockers_WithBlockers(t *testing.T) {
 	}
 }
 
+func TestRenderBlockers_WithStateRows(t *testing.T) {
+	data := &views.WorklogData{
+		Turns: []views.Turn{
+			{ID: "t1", SessionID: "s1", SequenceNo: 1, StartedAt: "2026-05-20T10:00:00Z",
+				Title: sql.NullString{String: "블로커 턴", Valid: true}},
+		},
+		Entries: []views.Entry{
+			{ID: "e1", SessionID: "s1", Kind: "blocker", Title: "열린 상세",
+				Detail: sql.NullString{String: "상세 원인", Valid: true}},
+		},
+		Blockers: []views.Blocker{
+			{ID: "b1", EntryID: sql.NullString{String: "e1", Valid: true},
+				TurnID: sql.NullString{String: "t1", Valid: true},
+				Title:  "열린 블로커", OpenedAt: "2026-05-20T10:01:00Z", Status: "open"},
+			{ID: "b2", Title: "해결 블로커", OpenedAt: "2026-05-20T10:02:00Z",
+				ClosedAt: sql.NullString{String: "2026-05-20T10:03:00Z", Valid: true}, Status: "resolved"},
+		},
+	}
+	got := views.RenderBlockers(data)
+	for _, want := range []string{"열림", "해결됨", "열린 블로커", "해결 블로커", "turn-1", "상세 원인"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("RenderBlockers state rows: missing %q in:\n%s", want, got)
+		}
+	}
+}
+
 // ── RenderDecisions ───────────────────────────────────────────────────────
 
 func TestRenderDecisions_Nil(t *testing.T) {
@@ -317,11 +350,22 @@ func TestRenderDecisions_NoDecisions(t *testing.T) {
 
 func TestRenderDecisions_WithDecisions(t *testing.T) {
 	data := &views.WorklogData{
+		Turns: []views.Turn{
+			{ID: "t1", SessionID: "s1", SequenceNo: 1, StartedAt: "2026-05-20T10:00:00Z",
+				Title: sql.NullString{String: "결정 턴", Valid: true}},
+		},
 		Entries: []views.Entry{
 			{ID: "e1", SessionID: "s1", Kind: "entry", Title: "일반", CreatedAt: "2026-05-20T10:00:00Z"},
 			{ID: "e2", SessionID: "s1", Kind: "decision", Title: "중요 결정",
 				CreatedAt: "2026-05-20T10:01:00Z",
+				TurnID:    sql.NullString{String: "t1", Valid: true},
 				Detail:    sql.NullString{String: "결정 근거", Valid: true}},
+			{ID: "e3", SessionID: "s1", Kind: "evidence", Title: "검증 근거",
+				CreatedAt: "2026-05-20T10:02:00Z",
+				TurnID:    sql.NullString{String: "t1", Valid: true}},
+		},
+		DecisionEvidenceLinks: []views.DecisionEvidenceLink{
+			{DecisionEntryID: "e2", EvidenceEntryID: "e3"},
 		},
 	}
 	got := views.RenderDecisions(data)
@@ -333,6 +377,11 @@ func TestRenderDecisions_WithDecisions(t *testing.T) {
 	}
 	if strings.Contains(got, "일반") {
 		t.Error("RenderDecisions: should not include non-decision entry")
+	}
+	for _, want := range []string{"turn-1", "결정 턴", "linked 1", "same-turn 1"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("RenderDecisions: missing %q in:\n%s", want, got)
+		}
 	}
 }
 
@@ -434,8 +483,27 @@ func TestLoadAll_WithData(t *testing.T) {
 	defer func() { _ = d.Close() }()
 
 	// Insert a session row directly.
-	if _, err := d.Exec(`INSERT INTO sessions (started_at, mode) VALUES ('2026-05-20T10:00:00Z', 'solo')`); err != nil {
+	var sessionID string
+	if err := d.QueryRow(`INSERT INTO sessions (started_at, mode) VALUES ('2026-05-20T10:00:00Z', 'solo') RETURNING id`).Scan(&sessionID); err != nil {
 		t.Fatalf("insert session: %v", err)
+	}
+	var turnID string
+	if err := d.QueryRow(`INSERT INTO turns (session_id, sequence_no, title, started_at) VALUES (?, 1, '로드 턴', '2026-05-20T10:01:00Z') RETURNING id`, sessionID).Scan(&turnID); err != nil {
+		t.Fatalf("insert turn: %v", err)
+	}
+	var decisionID string
+	if err := d.QueryRow(`INSERT INTO entries (session_id, turn_id, kind, title, created_at) VALUES (?, ?, 'decision', '로드 결정', '2026-05-20T10:02:00Z') RETURNING id`, sessionID, turnID).Scan(&decisionID); err != nil {
+		t.Fatalf("insert decision: %v", err)
+	}
+	var evidenceID string
+	if err := d.QueryRow(`INSERT INTO entries (session_id, turn_id, kind, title, created_at) VALUES (?, ?, 'evidence', '로드 근거', '2026-05-20T10:03:00Z') RETURNING id`, sessionID, turnID).Scan(&evidenceID); err != nil {
+		t.Fatalf("insert evidence: %v", err)
+	}
+	if _, err := d.Exec(`INSERT INTO decision_evidence_links (decision_entry_id, evidence_entry_id, created_at) VALUES (?, ?, '2026-05-20T10:04:00Z')`, decisionID, evidenceID); err != nil {
+		t.Fatalf("insert decision evidence link: %v", err)
+	}
+	if _, err := d.Exec(`INSERT INTO blockers (turn_id, entry_id, title, opened_at) VALUES (?, ?, '로드 블로커', '2026-05-20T10:05:00Z')`, turnID, decisionID); err != nil {
+		t.Fatalf("insert blocker: %v", err)
 	}
 
 	wd, err := views.LoadAll(d)
@@ -445,12 +513,18 @@ func TestLoadAll_WithData(t *testing.T) {
 	if len(wd.Sessions) != 1 {
 		t.Errorf("LoadAll with data: Sessions = %d, want 1", len(wd.Sessions))
 	}
+	if len(wd.Blockers) != 1 {
+		t.Errorf("LoadAll with data: Blockers = %d, want 1", len(wd.Blockers))
+	}
+	if len(wd.DecisionEvidenceLinks) != 1 {
+		t.Errorf("LoadAll with data: DecisionEvidenceLinks = %d, want 1", len(wd.DecisionEvidenceLinks))
+	}
 
 	sum, err := views.SeqSum(d)
 	if err != nil {
 		t.Fatalf("SeqSum with session: %v", err)
 	}
-	if sum != 1 {
-		t.Errorf("SeqSum with 1 session = %d, want 1", sum)
+	if sum != 6 {
+		t.Errorf("SeqSum with full fixture = %d, want 6", sum)
 	}
 }

@@ -8,6 +8,8 @@ package cli
 // so that the DB state required by each command is already present.
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -54,6 +56,30 @@ func TestPathCmd(t *testing.T) {
 func TestStatusCmd(t *testing.T) {
 	setupEnv(t)
 	execRunE(t, newStatusCmd(), false, "활성", "작업 중", "다음 단계")
+}
+
+func TestStatusCmd_CreatesSessionWithoutStart(t *testing.T) {
+	dir := setupEnv(t)
+	execRunE(t, newStatusCmd(), false, "활성", "작업 중", "다음 단계")
+	if b, err := os.ReadFile(filepath.Join(dir, "session-id")); err != nil || len(b) == 0 {
+		t.Fatalf("status should create session-id, got len=%d err=%v", len(b), err)
+	}
+}
+
+func TestModeCmd_CreatesSessionWithoutStart(t *testing.T) {
+	dir := setupEnv(t)
+	execRunE(t, newModeCmd(), false, "solo", "시작 없이 모드 기록")
+	if b, err := os.ReadFile(filepath.Join(dir, "session-id")); err != nil || len(b) == 0 {
+		t.Fatalf("mode should create session-id, got len=%d err=%v", len(b), err)
+	}
+}
+
+func TestTurnStartCmd_CreatesSessionWithoutStart(t *testing.T) {
+	dir := setupEnv(t)
+	execRunE(t, newTurnStartCmd(), false, "시작 없이 턴")
+	if b, err := os.ReadFile(filepath.Join(dir, "session-id")); err != nil || len(b) == 0 {
+		t.Fatalf("turn-start should create session-id, got len=%d err=%v", len(b), err)
+	}
 }
 
 // TestReportCmd_Text runs report --format text on an empty DB.

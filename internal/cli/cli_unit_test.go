@@ -113,7 +113,7 @@ func TestFmtDurationMS(t *testing.T) {
 		want string
 	}{
 		{0, "0s"},
-		{500, "0s"},     // < 1s
+		{500, "0s"}, // < 1s
 		{1000, "1s"},
 		{60000, "1m 0s"},
 		{3600000, "1h 0m 0s"},
@@ -468,6 +468,20 @@ func TestInsertEntry(t *testing.T) {
 	}
 	if id == "" {
 		t.Error("insertEntry returned empty ID")
+	}
+}
+
+func TestInsertEntry_CreatesSessionWithoutActiveSession(t *testing.T) {
+	s := makeTestSession(t)
+	id, err := insertEntry(s, db.KindEntry, "항목 제목", "상세")
+	if err != nil {
+		t.Fatalf("insertEntry without active session: %v", err)
+	}
+	if id == "" {
+		t.Error("insertEntry returned empty ID")
+	}
+	if sessionID := s.cfg.ActiveSessionID(); sessionID == "" {
+		t.Error("insertEntry should persist an active session ID")
 	}
 }
 
@@ -829,6 +843,22 @@ func TestViewerScript_Default(t *testing.T) {
 	}
 	if !strings.Contains(script, "flightlog") {
 		t.Error("viewerScript: binary path not in script")
+	}
+	for _, key := range []string{"r|R|ㄱ", "q|Q|ㅂ"} {
+		if !strings.Contains(script, key) {
+			t.Errorf("viewerScript: missing Korean key binding %q", key)
+		}
+	}
+	for _, label := range []string{"[r/ㄱ]새로고침", "[q/ㅂ]종료"} {
+		if strings.Contains(script, label) {
+			t.Errorf("viewerScript: Korean alias should not be shown in label %q", label)
+		}
+	}
+	if strings.Contains(script, "?7l") {
+		t.Error("viewerScript: should not disable terminal autowrap")
+	}
+	if !strings.Contains(script, "?7h") {
+		t.Error("viewerScript: should enable terminal autowrap before drawing")
 	}
 }
 

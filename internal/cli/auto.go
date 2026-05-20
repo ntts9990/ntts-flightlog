@@ -27,18 +27,8 @@ func newAutoCmd() *cobra.Command {
 			}
 
 			// If there's no active session, create one (like start).
-			sessionID := s.cfg.ActiveSessionID()
-			if sessionID == "" {
-				sessionID, err = insertSession(s, title, "solo")
-				if err != nil {
-					return err
-				}
-				if err := worklog.WriteFile(s.cfg.SessionIDFile, sessionID); err != nil {
-					return err
-				}
-				if err := worklog.WriteFile(s.cfg.SessionStart, worklog.EpochSeconds()); err != nil {
-					return err
-				}
+			if _, err := ensureActiveSession(s, title, "solo"); err != nil {
+				return err
 			}
 
 			if err := worklog.ReplaceStatus(s.cfg, "활성",

@@ -23,9 +23,9 @@ func newViewCmd() *cobra.Command {
 
 Modes:
   flat        전체 워크로그 (기본값, main.md 기반)
-  turns       턴별 워크로그
-  decisions   결정 사항만
-  blockers    블로커만
+  turns       턴 인덱스 (SQLite 기반 요약)
+  decisions   결정 기록 (SQLite 기반)
+  blockers    블로커/리스크 (SQLite 기반)
   tui         Bubble Tea 인터랙티브 TUI (SQLite 기반, Phase B)
 
 TUI flags:
@@ -44,11 +44,11 @@ TUI flags:
 			case "flat":
 				return worklog.RenderFlat(cfg, w)
 			case "turns":
-				return worklog.RenderTurns(cfg, w)
+				return renderSQLiteView(cfg, "turns", w)
 			case "decisions":
-				return worklog.FilterByKind(cfg, "decision", w)
+				return renderSQLiteView(cfg, "decisions", w)
 			case "blockers":
-				return worklog.FilterByKind(cfg, "blocker", w)
+				return renderSQLiteView(cfg, "blockers", w)
 
 			case "tui":
 				d, err := db.Open(cfg.DBPath)
@@ -84,4 +84,19 @@ TUI flags:
 		"noninteractive 모드에서 출력할 뷰 (flat|turns|decisions|blockers|report)")
 
 	return cmd
+}
+
+func renderSQLiteView(cfg *worklog.Config, viewName string, w *os.File) error {
+	d, err := db.Open(cfg.DBPath)
+	if err != nil {
+		return fmt.Errorf("view %s: open db: %w", viewName, err)
+	}
+	defer d.Close()
+
+	data, err := tuiviews.LoadAll(d)
+	if err != nil {
+		return fmt.Errorf("view %s: load: %w", viewName, err)
+	}
+	fmt.Fprint(w, tui.RenderView(data, viewName, cfg.TurnsDir))
+	return nil
 }

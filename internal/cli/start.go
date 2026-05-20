@@ -72,6 +72,34 @@ func insertSession(s *session, title, mode string) (string, error) {
 	return id, nil
 }
 
+// ensureActiveSession returns a usable session ID, creating and persisting one
+// when the v2 session-id file is missing. This keeps append-style commands from
+// writing NULL session_id rows when users call them before start/auto completes.
+func ensureActiveSession(s *session, title, mode string) (string, error) {
+	if sessionID := s.cfg.ActiveSessionID(); sessionID != "" {
+		return sessionID, nil
+	}
+	if title == "" {
+		title = "작업 기록"
+	}
+	if mode == "" {
+		mode = "solo"
+	}
+	sessionID, err := insertSession(s, title, mode)
+	if err != nil {
+		return "", err
+	}
+	if err := worklog.WriteFile(s.cfg.SessionIDFile, sessionID); err != nil {
+		return "", err
+	}
+	if worklog.ReadFile(s.cfg.SessionStart) == "" {
+		if err := worklog.WriteFile(s.cfg.SessionStart, worklog.EpochSeconds()); err != nil {
+			return "", err
+		}
+	}
+	return sessionID, nil
+}
+
 // startPane spawns a tmux side pane running the interactive viewer loop.
 // If not in tmux or tmux is unavailable, prints an informational message.
 func startPane(cfg *worklog.Config, title string, cmd *cobra.Command) error {
@@ -170,7 +198,7 @@ print_header() {
 }
 
 draw_once() {
-  printf '\033[H\033[J\033[3J\033[?7l'
+  printf '\033[?7h\033[H\033[J\033[3J'
   print_header "$view"
   local term_h content_h
   term_h=$(tput lines 2>/dev/null || printf 30)
@@ -180,7 +208,6 @@ draw_once() {
   WORKLOG_FILE='%s' \
   TURNS_DIR='%s' \
   '%s' view "$view" 2>/dev/null | tail -n "$content_h"
-  printf '\033[?7h'
 }
 
 get_mtime() {
@@ -196,8 +223,8 @@ while true; do
       2) view="turns";     draw_once; last_mtime=$(get_mtime) ;;
       3) view="decisions"; draw_once; last_mtime=$(get_mtime) ;;
       4) view="blockers";  draw_once; last_mtime=$(get_mtime) ;;
-      r|R) draw_once; last_mtime=$(get_mtime) ;;
-      q|Q) break ;;
+      r|R|ㄱ) draw_once; last_mtime=$(get_mtime) ;;
+      q|Q|ㅂ) break ;;
       *) : ;;
     esac
   else

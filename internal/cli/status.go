@@ -32,15 +32,16 @@ func newStatusCmd() *cobra.Command {
 				return err
 			}
 
-			// Update SQLite session focus/next_step if session is active.
-			sessionID := s.cfg.ActiveSessionID()
-			if sessionID != "" {
-				if _, err := s.store.Exec(
-					`UPDATE sessions SET focus = ?, next_step = ? WHERE id = ?`,
-					nullStr(focus), nullStr(nextStep), sessionID,
-				); err != nil {
-					return err
-				}
+			// Update SQLite session focus/next_step.
+			sessionID, err := ensureActiveSession(s, "작업 기록", "solo")
+			if err != nil {
+				return err
+			}
+			if _, err := s.store.Exec(
+				`UPDATE sessions SET focus = ?, next_step = ? WHERE id = ?`,
+				nullStr(focus), nullStr(nextStep), sessionID,
+			); err != nil {
+				return err
 			}
 
 			return worklog.ReplaceStatus(s.cfg, label, focus, nextStep)

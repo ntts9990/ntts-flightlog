@@ -161,6 +161,21 @@ func TestView_MenuHeader_ContainsAllKeys(t *testing.T) {
 	}
 }
 
+func TestUpdate_KoreanKeyboardReloadAndQuit(t *testing.T) {
+	m := makeModel(nil)
+	reloadMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("ㄱ")}
+	_, reloadCmd := m.Update(reloadMsg)
+	if reloadCmd == nil {
+		t.Fatal("ㄱ should trigger reload command")
+	}
+
+	quitMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("ㅂ")}
+	_, quitCmd := m.Update(quitMsg)
+	if quitCmd == nil {
+		t.Fatal("ㅂ should trigger quit command")
+	}
+}
+
 func TestView_MenuHeader_ActiveViewUnderlined(t *testing.T) {
 	for _, tc := range []struct {
 		view    viewID
@@ -188,8 +203,8 @@ func TestView_MenuHeader_ActiveViewUnderlined(t *testing.T) {
 
 func TestCurrentContent_EmptyData_ShowsPlaceholder(t *testing.T) {
 	tests := []struct {
-		view     viewID
-		wantSub  string
+		view    viewID
+		wantSub string
 	}{
 		{viewFlat, "워크로그가 비어"},
 		{viewTurns, "turn"},

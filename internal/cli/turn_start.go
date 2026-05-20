@@ -61,7 +61,10 @@ func newTurnStartCmd() *cobra.Command {
 			}
 
 			// Insert turn into SQLite (with anchor columns).
-			sessionID := s.cfg.ActiveSessionID()
+			sessionID, err := ensureActiveSession(s, "작업 기록", "solo")
+			if err != nil {
+				return err
+			}
 			turnID, err := insertTurnWithAnchor(s, sessionID, n, title, intent, constraintsJSON, doneWhen)
 			if err != nil {
 				return err

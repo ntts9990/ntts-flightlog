@@ -48,11 +48,31 @@ type Entry struct {
 	AgentID   sql.NullString
 }
 
+// Blocker represents a blocker state row tied to a blocker entry.
+type Blocker struct {
+	ID                 string
+	TurnID             sql.NullString
+	EntryID            sql.NullString
+	Title              string
+	OpenedAt           string
+	ClosedAt           sql.NullString
+	Status             string
+	AccumulatedSeconds int64
+}
+
+// DecisionEvidenceLink represents an explicit decision→evidence relationship.
+type DecisionEvidenceLink struct {
+	DecisionEntryID string
+	EvidenceEntryID string
+}
+
 // WorklogData holds all data needed to render the TUI views.
 type WorklogData struct {
-	Sessions []Session
-	Turns    []Turn
-	Entries  []Entry
+	Sessions              []Session
+	Turns                 []Turn
+	Entries               []Entry
+	Blockers              []Blocker
+	DecisionEvidenceLinks []DecisionEvidenceLink
 }
 
 // LoadAll queries all worklog data from SQLite in display order.
@@ -69,7 +89,21 @@ func LoadAll(d *db.DB) (*WorklogData, error) {
 	if err != nil {
 		return nil, fmt.Errorf("tui: load entries: %w", err)
 	}
-	return &WorklogData{Sessions: sessions, Turns: turns, Entries: entries}, nil
+	blockers, err := loadBlockers(d)
+	if err != nil {
+		return nil, fmt.Errorf("tui: load blockers: %w", err)
+	}
+	links, err := loadDecisionEvidenceLinks(d)
+	if err != nil {
+		return nil, fmt.Errorf("tui: load decision evidence links: %w", err)
+	}
+	return &WorklogData{
+		Sessions:              sessions,
+		Turns:                 turns,
+		Entries:               entries,
+		Blockers:              blockers,
+		DecisionEvidenceLinks: links,
+	}, nil
 }
 
 func loadSessions(d *db.DB) ([]Session, error) {
@@ -138,6 +172,48 @@ func loadEntries(d *db.DB) ([]Entry, error) {
 	return es, rows.Err()
 }
 
+func loadBlockers(d *db.DB) ([]Blocker, error) {
+	rows, err := d.Query(`
+		SELECT id, turn_id, entry_id, title, opened_at, closed_at,
+		       status, accumulated_seconds
+		FROM blockers ORDER BY status, opened_at`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var bs []Blocker
+	for rows.Next() {
+		var b Blocker
+		if err := rows.Scan(
+			&b.ID, &b.TurnID, &b.EntryID, &b.Title, &b.OpenedAt,
+			&b.ClosedAt, &b.Status, &b.AccumulatedSeconds,
+		); err != nil {
+			return nil, err
+		}
+		bs = append(bs, b)
+	}
+	return bs, rows.Err()
+}
+
+func loadDecisionEvidenceLinks(d *db.DB) ([]DecisionEvidenceLink, error) {
+	rows, err := d.Query(`
+		SELECT decision_entry_id, evidence_entry_id
+		FROM decision_evidence_links ORDER BY created_at`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var links []DecisionEvidenceLink
+	for rows.Next() {
+		var link DecisionEvidenceLink
+		if err := rows.Scan(&link.DecisionEntryID, &link.EvidenceEntryID); err != nil {
+			return nil, err
+		}
+		links = append(links, link)
+	}
+	return links, rows.Err()
+}
+
 // SeqSum returns a change-detection counter: sum of row counts across key tables.
 // When this value increases the caller should reload data from DB.
 func SeqSum(d *db.DB) (int64, error) {
@@ -145,7 +221,9 @@ func SeqSum(d *db.DB) (int64, error) {
 	err := d.QueryRow(`
 		SELECT (SELECT COUNT(*) FROM entries) +
 		       (SELECT COUNT(*) FROM turns) +
-		       (SELECT COUNT(*) FROM sessions)
+		       (SELECT COUNT(*) FROM sessions) +
+		       (SELECT COUNT(*) FROM blockers) +
+		       (SELECT COUNT(*) FROM decision_evidence_links)
 	`).Scan(&sum)
 	return sum, err
 }
