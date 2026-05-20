@@ -58,10 +58,10 @@ Usage:
   ntts-flightlog blocker <title> [detail]
   ntts-flightlog path                # absolute path of main worklog file
   ntts-flightlog turn-path [N]       # absolute path of turn N (or current turn)
-  ntts-flightlog view <flat|turns|decisions|blockers>  # one-shot ANSI render
+  ntts-flightlog view <flat|turns|decisions|blockers|report>  # one-shot ANSI render
 
 In-pane view menu (when launched via `auto`/`start` inside tmux):
-  [1] flat   [2] turns   [3] decisions   [4] blockers   [r] reload   [q] quit
+  [1] flat   [2] turns   [3] decisions   [4] blockers   [5] report   [r] reload   [q] quit
   Turn-start titles are OSC 8 hyperlinks. cmd/ctrl-click in iTerm2 / WezTerm /
   Kitty / Ghostty / VS Code terminal opens the per-turn markdown file.
 
@@ -499,8 +499,12 @@ render_view() {
     blockers)
       filter_entries_by_kind "blocker"
       ;;
+    report)
+      printf '## 리포트\n\n'
+      printf 'legacy bash fallback에서는 report 뷰를 사용할 수 없습니다. Go CLI 위임 모드로 실행하세요.\n'
+      ;;
     *)
-      printf '알 수 없는 view: %s (flat|turns|decisions|blockers)\n' "${view}" >&2
+      printf '알 수 없는 view: %s (flat|turns|decisions|blockers|report)\n' "${view}" >&2
       return 2
       ;;
   esac
@@ -530,7 +534,7 @@ print_header() {
   bold=\$(printf '\\033[1m')
   dim=\$(printf '\\033[2m')
   hl=\$(printf '\\033[38;5;226m')
-  local items=("flat:[1]평면" "turns:[2]턴별" "decisions:[3]결정" "blockers:[4]블로커")
+  local items=("flat:[1]평면" "turns:[2]턴별" "decisions:[3]결정" "blockers:[4]블로커" "report:[5]리포트")
   local label_line="" item id label
   for item in "\${items[@]}"; do
     id="\${item%%:*}"
@@ -549,7 +553,7 @@ print_header() {
 }
 
 draw_once() {
-  printf '\\033[H\\033[J\\033[3J\\033[?7l'
+  printf '\\033[?7h\\033[H\\033[J\\033[3J'
   print_header "\$view"
   local term_h content_h
   term_h=\$(tput lines 2>/dev/null || printf 30)
@@ -575,8 +579,9 @@ while true; do
       2) view="turns";     draw_once; last_mtime=\$(get_mtime) ;;
       3) view="decisions"; draw_once; last_mtime=\$(get_mtime) ;;
       4) view="blockers";  draw_once; last_mtime=\$(get_mtime) ;;
-      r|R) draw_once; last_mtime=\$(get_mtime) ;;
-      q|Q) break ;;
+      5) view="report";    draw_once; last_mtime=\$(get_mtime) ;;
+      r|R|ㄱ) draw_once; last_mtime=\$(get_mtime) ;;
+      q|Q|ㅂ) break ;;
       *) : ;;
     esac
   else

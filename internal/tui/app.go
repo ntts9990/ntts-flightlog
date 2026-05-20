@@ -32,7 +32,7 @@ const (
 	viewTurns                       // 2 = grouped by turn
 	viewDecisions                   // 3 = decisions only
 	viewBlockers                    // 4 = blockers only
-	viewReport                      // 5 = metrics report (B4 placeholder)
+	viewReport                      // 5 = operational report
 )
 
 // headerHeight is the number of lines consumed by the pinned menu (line + blank).

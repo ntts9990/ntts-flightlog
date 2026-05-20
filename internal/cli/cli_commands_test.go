@@ -129,10 +129,10 @@ func TestReportCmd_DayWindow(t *testing.T) {
 	execRunE(t, cmd, false)
 }
 
-// TestViewCmd_AllModes exercises view flat/turns/decisions/blockers.
+// TestViewCmd_AllModes exercises all one-shot view modes.
 func TestViewCmd_AllModes(t *testing.T) {
 	setupEnv(t)
-	for _, mode := range []string{"flat", "turns", "decisions", "blockers"} {
+	for _, mode := range []string{"flat", "turns", "decisions", "blockers", "report"} {
 		t.Run(mode, func(t *testing.T) {
 			setupEnv(t) // fresh dir per subtest
 			execRunE(t, newViewCmd(), false, mode)

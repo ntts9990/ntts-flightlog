@@ -17,7 +17,7 @@ func newViewCmd() *cobra.Command {
 	var tuiView string
 
 	cmd := &cobra.Command{
-		Use:   "view [flat|turns|decisions|blockers|tui]",
+		Use:   "view [flat|turns|decisions|blockers|report|tui]",
 		Short: "워크로그를 ANSI 색상으로 출력합니다",
 		Long: `워크로그를 지정한 뷰 모드로 ANSI 렌더링하여 출력합니다.
 
@@ -26,6 +26,7 @@ Modes:
   turns       턴 인덱스 (SQLite 기반 요약)
   decisions   결정 기록 (SQLite 기반)
   blockers    블로커/리스크 (SQLite 기반)
+  report      운영 리포트 (SQLite 기반)
   tui         Bubble Tea 인터랙티브 TUI (SQLite 기반, Phase B)
 
 TUI flags:
@@ -49,6 +50,8 @@ TUI flags:
 				return renderSQLiteView(cfg, "decisions", w)
 			case "blockers":
 				return renderSQLiteView(cfg, "blockers", w)
+			case "report":
+				return renderSQLiteView(cfg, "report", w)
 
 			case "tui":
 				d, err := db.Open(cfg.DBPath)
@@ -73,7 +76,7 @@ TUI flags:
 				return tui.Run(d, cfg.TurnsDir)
 
 			default:
-				return fmt.Errorf("알 수 없는 view: %s (flat|turns|decisions|blockers|tui)", mode)
+				return fmt.Errorf("알 수 없는 view: %s (flat|turns|decisions|blockers|report|tui)", mode)
 			}
 		},
 	}

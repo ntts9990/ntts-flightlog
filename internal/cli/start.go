@@ -179,7 +179,7 @@ print_header() {
   bold=$(printf '\033[1m')
   dim=$(printf '\033[2m')
   hl=$(printf '\033[38;5;226m')
-  local items=("flat:[1]평면" "turns:[2]턴별" "decisions:[3]결정" "blockers:[4]블로커")
+  local items=("flat:[1]평면" "turns:[2]턴별" "decisions:[3]결정" "blockers:[4]블로커" "report:[5]리포트")
   local label_line="" item id label
   for item in "${items[@]}"; do
     id="${item%%:*}"
@@ -223,6 +223,7 @@ while true; do
       2) view="turns";     draw_once; last_mtime=$(get_mtime) ;;
       3) view="decisions"; draw_once; last_mtime=$(get_mtime) ;;
       4) view="blockers";  draw_once; last_mtime=$(get_mtime) ;;
+      5) view="report";    draw_once; last_mtime=$(get_mtime) ;;
       r|R|ㄱ) draw_once; last_mtime=$(get_mtime) ;;
       q|Q|ㅂ) break ;;
       *) : ;;
