@@ -11,6 +11,9 @@ tmp/
 .omc/project-memory.json
 .omc/worktrees/
 
+# user-local Claude Code settings
+.claude/
+
 # Go build output
 /flightlog
 /dist/

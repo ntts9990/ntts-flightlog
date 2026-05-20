@@ -1,0 +1,50 @@
+{
+  "_comment": "Expected metric values for testdata/metric_fixtures/fixture_10s_3t_47e.sql. Frozen at Phase B3.",
+  "_fixture": "10 sessions × 3 turns × 47 entries (30 entry / 8 decision / 6 evidence / 3 blocker)",
+  "_agents": "claude: sessions s01-s08 (24 turns, 23 complete + 1 abort); codex: sessions s09-s10 (6 turns, 5 complete + 1 abandon)",
+
+  "turn_duration_count": 30,
+  "blocker_accumulation_count": 3,
+
+  "agent_completion": [
+    {
+      "agent_id": "claude",
+      "completion_rate": 0.9583333333333334,
+      "complete_count": 23,
+      "total_count": 24
+    },
+    {
+      "agent_id": "codex",
+      "completion_rate": 0.8333333333333334,
+      "complete_count": 5,
+      "total_count": 6
+    }
+  ],
+
+  "agent_blocker_freq": [
+    {
+      "agent_id": "claude",
+      "blocker_freq": 0.125,
+      "blocker_count": 3,
+      "turn_count": 24
+    },
+    {
+      "agent_id": "codex",
+      "blocker_freq": 0.0,
+      "blocker_count": 0,
+      "turn_count": 6
+    }
+  ],
+
+  "evidence_bound_decisions": {
+    "ratio": 0.5,
+    "linked_count": 4,
+    "total_count": 8
+  },
+
+  "blocker_accumulation_rows": [
+    {"blocker_id": "BL1", "opened_at": "2026-01-06T01:00:20Z", "closed_at": "2026-01-06T02:00:20Z", "accumulated_seconds": 3600},
+    {"blocker_id": "BL2", "opened_at": "2026-01-06T02:00:20Z", "closed_at": "2026-01-06T02:30:20Z", "accumulated_seconds": 1800},
+    {"blocker_id": "BL3", "opened_at": "2026-01-06T03:00:20Z", "closed_at": "",                     "accumulated_seconds": 0}
+  ]
+}

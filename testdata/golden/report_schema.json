@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$comment": "Frozen JSON schema for `flightlog report --format json`. Phase B4. Do not modify without updating schema_test.go.",
+  "title": "flightlog report output",
+  "type": "object",
+  "required": ["window", "agent", "generated_at", "metrics"],
+  "additionalProperties": false,
+  "properties": {
+    "window": {
+      "type": "string",
+      "description": "Time window filter: day | week | all"
+    },
+    "agent": {
+      "type": "string",
+      "description": "Agent filter (empty string = all agents)"
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "ISO 8601 UTC timestamp of report generation"
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["turn_duration", "blocker_accumulation", "agent_completion", "agent_blocker_freq", "evidence_bound_decisions"],
+      "additionalProperties": false,
+      "properties": {
+        "turn_duration": {
+          "type": "array",
+          "description": "metric_turn_duration rows — Turn 소요시간 분포",
+          "items": {
+            "type": "object",
+            "required": ["turn_id", "agent_id", "elapsed_ms"],
+            "additionalProperties": false,
+            "properties": {
+              "turn_id":    { "type": "string" },
+              "agent_id":  { "type": "string" },
+              "elapsed_ms": { "type": ["integer", "null"] }
+            }
+          }
+        },
+        "blocker_accumulation": {
+          "type": "array",
+          "description": "metric_blocker_accumulation rows — Blocker 누적시간",
+          "items": {
+            "type": "object",
+            "required": ["blocker_id", "opened_at", "closed_at", "accumulated_seconds"],
+            "additionalProperties": false,
+            "properties": {
+              "blocker_id":          { "type": "string" },
+              "opened_at":           { "type": "string" },
+              "closed_at":           { "type": "string", "description": "empty string when blocker is still open" },
+              "accumulated_seconds": { "type": "integer" }
+            }
+          }
+        },
+        "agent_completion": {
+          "type": "array",
+          "description": "metric_agent_completion rows — Agent별 Turn 완료율",
+          "items": {
+            "type": "object",
+            "required": ["agent_id", "completion_rate", "complete_count", "total_count"],
+            "additionalProperties": false,
+            "properties": {
+              "agent_id":        { "type": "string" },
+              "completion_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+              "complete_count":  { "type": "integer", "minimum": 0 },
+              "total_count":     { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
+        "agent_blocker_freq": {
+          "type": "array",
+          "description": "metric_agent_blocker_freq rows — Agent별 Blocker 빈도",
+          "items": {
+            "type": "object",
+            "required": ["agent_id", "blocker_freq", "blocker_count", "turn_count"],
+            "additionalProperties": false,
+            "properties": {
+              "agent_id":     { "type": "string" },
+              "blocker_freq": { "type": "number", "minimum": 0 },
+              "blocker_count":{ "type": "integer", "minimum": 0 },
+              "turn_count":   { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
+        "evidence_bound_decisions": {
+          "type": "object",
+          "description": "metric_evidence_bound_decisions aggregate — Evidence가 붙은 Decision 비율",
+          "required": ["ratio", "linked_count", "total_count"],
+          "additionalProperties": false,
+          "properties": {
+            "ratio":        { "type": "number", "minimum": 0, "maximum": 1 },
+            "linked_count": { "type": "integer", "minimum": 0 },
+            "total_count":  { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    }
+  }
+}
