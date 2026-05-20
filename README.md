@@ -127,7 +127,7 @@ ntts-flightlog self-upgrade
 4. agent blocker frequency
 5. evidence-bound decision ratio
 
-Use `ntts-flightlog agent-stats` to inspect Phase E agent attribution health, including `auto_detect_unknown_rate` and `override_rate`.
+Use `ntts-flightlog agent-stats` to inspect Phase E agent attribution health, including `auto_detect_correct_rate`, `auto_detect_unknown_rate`, `auto_detect_mismatch_rate`, and `override_rate`.
 
 ## Views and clickable turns
 

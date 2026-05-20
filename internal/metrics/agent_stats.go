@@ -22,9 +22,13 @@ type AgentStat struct {
 // AgentStatsSummary reports detection quality gates used in Phase E4.
 type AgentStatsSummary struct {
 	TotalSessions    int64   `json:"total_sessions"`
+	CorrectSessions  int64   `json:"correct_sessions"`
 	UnknownSessions  int64   `json:"unknown_sessions"`
+	MismatchSessions int64   `json:"mismatch_sessions"`
 	OverrideSessions int64   `json:"override_sessions"`
+	CorrectRate      float64 `json:"auto_detect_correct_rate"`
 	UnknownRate      float64 `json:"auto_detect_unknown_rate"`
+	MismatchRate     float64 `json:"auto_detect_mismatch_rate"`
 	OverrideRate     float64 `json:"override_rate"`
 }
 
@@ -45,15 +49,41 @@ func QueryAgentStats(d *db.DB, f Filter) (*AgentStatsSnapshot, error) {
 
 	summaryQ := `SELECT
 		COUNT(*) AS total_sessions,
-		SUM(CASE WHEN agent_detected IS NULL OR agent_detected = '' OR agent_detected = 'unknown' THEN 1 ELSE 0 END) AS unknown_sessions,
-		SUM(CASE WHEN agent_override IS NOT NULL AND agent_override != '' THEN 1 ELSE 0 END) AS override_sessions
+		COALESCE(SUM(CASE
+			WHEN agent_detected IS NOT NULL
+			 AND agent_detected != ''
+			 AND agent_detected != 'unknown'
+			 AND (agent_override IS NULL OR agent_override = '' OR agent_override = agent_detected)
+			THEN 1 ELSE 0 END), 0) AS correct_sessions,
+		COALESCE(SUM(CASE
+			WHEN agent_detected IS NULL OR agent_detected = '' OR agent_detected = 'unknown'
+			THEN 1 ELSE 0 END), 0) AS unknown_sessions,
+		COALESCE(SUM(CASE
+			WHEN agent_override IS NOT NULL
+			 AND agent_override != ''
+			 AND agent_detected IS NOT NULL
+			 AND agent_detected != ''
+			 AND agent_detected != 'unknown'
+			 AND agent_override != agent_detected
+			THEN 1 ELSE 0 END), 0) AS mismatch_sessions,
+		COALESCE(SUM(CASE
+			WHEN agent_override IS NOT NULL AND agent_override != ''
+			THEN 1 ELSE 0 END), 0) AS override_sessions
 		FROM sessions WHERE 1=1` + windowPredicate
 	var summary AgentStatsSummary
-	if err := d.QueryRow(summaryQ).Scan(&summary.TotalSessions, &summary.UnknownSessions, &summary.OverrideSessions); err != nil {
+	if err := d.QueryRow(summaryQ).Scan(
+		&summary.TotalSessions,
+		&summary.CorrectSessions,
+		&summary.UnknownSessions,
+		&summary.MismatchSessions,
+		&summary.OverrideSessions,
+	); err != nil {
 		return nil, fmt.Errorf("agent stats summary: %w", err)
 	}
 	if summary.TotalSessions > 0 {
+		summary.CorrectRate = float64(summary.CorrectSessions) / float64(summary.TotalSessions)
 		summary.UnknownRate = float64(summary.UnknownSessions) / float64(summary.TotalSessions)
+		summary.MismatchRate = float64(summary.MismatchSessions) / float64(summary.TotalSessions)
 		summary.OverrideRate = float64(summary.OverrideSessions) / float64(summary.TotalSessions)
 	}
 

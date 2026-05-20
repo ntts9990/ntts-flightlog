@@ -64,8 +64,12 @@ func formatAgentStatsText(snap *metrics.AgentStatsSnapshot, agent string) string
 		filter = agent
 	}
 	fmt.Fprintf(&b, "NTTS Flightlog agent-stats [window=%s] [agent=%s]\n", snap.Window, filter)
+	fmt.Fprintf(&b, "auto_detect_correct_rate: %.1f%% (%d/%d sessions)\n",
+		snap.Summary.CorrectRate*100, snap.Summary.CorrectSessions, snap.Summary.TotalSessions)
 	fmt.Fprintf(&b, "auto_detect_unknown_rate: %.1f%% (%d/%d sessions)\n",
 		snap.Summary.UnknownRate*100, snap.Summary.UnknownSessions, snap.Summary.TotalSessions)
+	fmt.Fprintf(&b, "auto_detect_mismatch_rate: %.1f%% (%d/%d sessions)\n",
+		snap.Summary.MismatchRate*100, snap.Summary.MismatchSessions, snap.Summary.TotalSessions)
 	fmt.Fprintf(&b, "override_rate: %.1f%% (%d/%d sessions)\n\n",
 		snap.Summary.OverrideRate*100, snap.Summary.OverrideSessions, snap.Summary.TotalSessions)
 	if len(snap.Agents) == 0 {

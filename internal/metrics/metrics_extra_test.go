@@ -4,6 +4,7 @@ package metrics_test
 // FormatJSON nil-slice coercion, and agent-filter paths.
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -169,5 +170,88 @@ func TestFormatJSONDeterminism(t *testing.T) {
 	}
 	if string(r1) != string(r2) {
 		t.Error("FormatJSON is not deterministic across two calls with the same inputs")
+	}
+}
+
+func TestQueryAgentStatsDetectionRates(t *testing.T) {
+	d := openPropDB(t)
+
+	propExec(t, d, `INSERT INTO sessions
+		(id, started_at, mode, agent_id, agent_detected, agent_override)
+		VALUES ('s1', '2026-01-01T00:00:00Z', 'solo', 'claude', 'claude', NULL)`)
+	propExec(t, d, `INSERT INTO sessions
+		(id, started_at, mode, agent_id, agent_detected, agent_override)
+		VALUES ('s2', '2026-01-01T00:00:00Z', 'solo', 'gemini', 'codex', 'gemini')`)
+	propExec(t, d, `INSERT INTO sessions
+		(id, started_at, mode, agent_id, agent_detected, agent_override)
+		VALUES ('s3', '2026-01-01T00:00:00Z', 'solo', NULL, 'unknown', NULL)`)
+	propExec(t, d, `INSERT INTO turns
+		(id, session_id, sequence_no, started_at, status, agent_id)
+		VALUES ('t1', 's1', 1, '2026-01-01T00:00:00Z', 'complete', 'claude')`)
+	propExec(t, d, `INSERT INTO turns
+		(id, session_id, sequence_no, started_at, status, agent_id)
+		VALUES ('t2', 's2', 1, '2026-01-01T00:00:00Z', 'abort', 'gemini')`)
+
+	snap, err := metrics.QueryAgentStats(d, metrics.Filter{})
+	if err != nil {
+		t.Fatalf("QueryAgentStats: %v", err)
+	}
+	if snap.Summary.TotalSessions != 3 {
+		t.Fatalf("total_sessions = %d, want 3", snap.Summary.TotalSessions)
+	}
+	if snap.Summary.CorrectSessions != 1 {
+		t.Errorf("correct_sessions = %d, want 1", snap.Summary.CorrectSessions)
+	}
+	if snap.Summary.MismatchSessions != 1 {
+		t.Errorf("mismatch_sessions = %d, want 1", snap.Summary.MismatchSessions)
+	}
+	if snap.Summary.UnknownSessions != 1 {
+		t.Errorf("unknown_sessions = %d, want 1", snap.Summary.UnknownSessions)
+	}
+	if snap.Summary.OverrideSessions != 1 {
+		t.Errorf("override_sessions = %d, want 1", snap.Summary.OverrideSessions)
+	}
+	assertFloat(t, "correct rate", snap.Summary.CorrectRate, 1.0/3.0)
+	assertFloat(t, "mismatch rate", snap.Summary.MismatchRate, 1.0/3.0)
+	assertFloat(t, "unknown rate", snap.Summary.UnknownRate, 1.0/3.0)
+}
+
+func TestFormatAgentStatsJSONSchema(t *testing.T) {
+	snap := &metrics.AgentStatsSnapshot{
+		Window: "all",
+		Summary: metrics.AgentStatsSummary{
+			TotalSessions:   2,
+			CorrectSessions: 1,
+			UnknownSessions: 1,
+			CorrectRate:     0.5,
+			UnknownRate:     0.5,
+			MismatchRate:    0,
+			OverrideRate:    0,
+		},
+	}
+	raw, err := metrics.FormatAgentStatsJSON(snap, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("FormatAgentStatsJSON: %v", err)
+	}
+	var out map[string]any
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, raw)
+	}
+	summary, ok := out["summary"].(map[string]any)
+	if !ok {
+		t.Fatalf("summary missing or wrong type: %v", out)
+	}
+	for _, key := range []string{
+		"auto_detect_correct_rate",
+		"auto_detect_unknown_rate",
+		"auto_detect_mismatch_rate",
+		"override_rate",
+	} {
+		if _, ok := summary[key]; !ok {
+			t.Fatalf("summary missing %q in %s", key, raw)
+		}
+	}
+	if !strings.Contains(string(raw), `"agents": []`) {
+		t.Fatalf("nil agents should serialize as []:\n%s", raw)
 	}
 }
