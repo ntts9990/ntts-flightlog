@@ -35,12 +35,7 @@ func RenderTurns(data *WorklogData, turnsDir string) string {
 
 		entries := entriesByTurn[t.ID]
 		counts := countEntriesByKind(entries)
-		result := "기록 없음"
-		if len(entries) > 0 {
-			result = entries[len(entries)-1].Title
-		} else if t.Status == "active" {
-			result = "진행 중"
-		}
+		result := turnResult(t, entries)
 
 		color := TurnColorFor(t.SequenceNo)
 		url := fmt.Sprintf("file://%s/turn-%d.md", absTurns, t.SequenceNo)
@@ -68,6 +63,19 @@ func RenderTurns(data *WorklogData, turnsDir string) string {
 	}
 
 	return sb.String()
+}
+
+func turnResult(t Turn, entries []Entry) string {
+	if t.Outcome.Valid && t.Outcome.String != "" {
+		return t.Outcome.String
+	}
+	if len(entries) > 0 {
+		return entries[len(entries)-1].Title
+	}
+	if t.Status == "active" {
+		return "진행 중"
+	}
+	return "기록 없음"
 }
 
 func countEntriesByKind(entries []Entry) map[string]int {

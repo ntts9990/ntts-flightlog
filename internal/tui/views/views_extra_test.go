@@ -244,6 +244,31 @@ func TestRenderTurns_EndedTurnLastEntryKindEntry(t *testing.T) {
 	}
 }
 
+func TestRenderTurns_UsesExplicitOutcome(t *testing.T) {
+	turn := views.Turn{
+		ID: "t1", SessionID: "s1", SequenceNo: 1,
+		StartedAt: "2026-05-20T10:00:00Z",
+		EndedAt:   sql.NullString{String: "2026-05-20T11:00:00Z", Valid: true},
+		Outcome:   sql.NullString{String: "명시적 결과", Valid: true},
+	}
+	entry := views.Entry{
+		ID: "e1", SessionID: "s1", Kind: "entry", Title: "마지막 엔트리",
+		CreatedAt: "2026-05-20T10:30:00Z",
+		TurnID:    sql.NullString{String: "t1", Valid: true},
+	}
+	data := &views.WorklogData{
+		Turns:   []views.Turn{turn},
+		Entries: []views.Entry{entry},
+	}
+	got := views.RenderTurns(data, "/tmp/turns")
+	if !strings.Contains(got, "결과: 명시적 결과") {
+		t.Errorf("RenderTurns explicit outcome: missing outcome; got:\n%s", got)
+	}
+	if strings.Contains(got, "결과: 마지막 엔트리") {
+		t.Errorf("RenderTurns explicit outcome: should not use last entry; got:\n%s", got)
+	}
+}
+
 func TestRenderTurns_TurnNoTitle(t *testing.T) {
 	// Turn with no title should fall back to "(제목 없음)".
 	turn := views.Turn{
@@ -515,7 +540,7 @@ func TestLoadAll_WithData(t *testing.T) {
 		t.Fatalf("insert session: %v", err)
 	}
 	var turnID string
-	if err := d.QueryRow(`INSERT INTO turns (session_id, sequence_no, title, started_at) VALUES (?, 1, '로드 턴', '2026-05-20T10:01:00Z') RETURNING id`, sessionID).Scan(&turnID); err != nil {
+	if err := d.QueryRow(`INSERT INTO turns (session_id, sequence_no, title, started_at, outcome) VALUES (?, 1, '로드 턴', '2026-05-20T10:01:00Z', '로드 결과') RETURNING id`, sessionID).Scan(&turnID); err != nil {
 		t.Fatalf("insert turn: %v", err)
 	}
 	var decisionID string

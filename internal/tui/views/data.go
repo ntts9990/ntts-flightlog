@@ -30,6 +30,7 @@ type Turn struct {
 	Status     string
 	ElapsedMs  sql.NullInt64
 	AgentID    sql.NullString
+	Outcome    sql.NullString
 	// A.5 TIA anchor columns (0002_turn_anchors.sql)
 	Intent          sql.NullString
 	ConstraintsJSON sql.NullString
@@ -144,7 +145,7 @@ func loadSessions(d *db.DB) ([]Session, error) {
 func loadTurns(d *db.DB) ([]Turn, error) {
 	rows, err := d.Query(`
 		SELECT id, session_id, sequence_no, title, started_at, ended_at,
-		       status, elapsed_ms, agent_id,
+		       status, elapsed_ms, agent_id, outcome,
 		       intent, constraints_json, done_when
 		FROM turns ORDER BY started_at, sequence_no`)
 	if err != nil {
@@ -157,7 +158,7 @@ func loadTurns(d *db.DB) ([]Turn, error) {
 		if err := rows.Scan(
 			&t.ID, &t.SessionID, &t.SequenceNo, &t.Title,
 			&t.StartedAt, &t.EndedAt, &t.Status, &t.ElapsedMs, &t.AgentID,
-			&t.Intent, &t.ConstraintsJSON, &t.DoneWhen,
+			&t.Outcome, &t.Intent, &t.ConstraintsJSON, &t.DoneWhen,
 		); err != nil {
 			return nil, err
 		}

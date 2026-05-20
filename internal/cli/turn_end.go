@@ -55,8 +55,8 @@ func newTurnEndCmd() *cobra.Command {
 			turnID := s.cfg.ActiveTurnID()
 			if turnID != "" {
 				if _, err := s.store.Exec(
-					`UPDATE turns SET ended_at = ?, elapsed_ms = ?, status = 'complete' WHERE id = ?`,
-					now(), elapsedMS, turnID,
+					`UPDATE turns SET ended_at = ?, elapsed_ms = ?, status = 'complete', outcome = ? WHERE id = ?`,
+					now(), elapsedMS, nullStr(summary), turnID,
 				); err != nil {
 					return err
 				}

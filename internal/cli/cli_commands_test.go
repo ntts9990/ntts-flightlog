@@ -252,8 +252,20 @@ func TestCommandChain_FullWorkflow(t *testing.T) {
 	}
 
 	// 13. turn-end
-	if err := newTurnEndCmd().RunE(newTurnEndCmd(), []string{}); err != nil {
+	if err := newTurnEndCmd().RunE(newTurnEndCmd(), []string{"명시적 턴 결과"}); err != nil {
 		t.Fatalf("turn-end: %v", err)
+	}
+	var outcome *string
+	s, err := openSession()
+	if err != nil {
+		t.Fatalf("openSession after turn-end: %v", err)
+	}
+	defer s.close()
+	if err := s.store.QueryRow(`SELECT outcome FROM turns WHERE sequence_no = 1`).Scan(&outcome); err != nil {
+		t.Fatalf("query turn outcome: %v", err)
+	}
+	if outcome == nil || *outcome != "명시적 턴 결과" {
+		t.Fatalf("turn outcome = %v, want 명시적 턴 결과", outcome)
 	}
 
 	// 14. stop
