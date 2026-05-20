@@ -9,6 +9,7 @@ const (
 	TableEntries               = "entries"
 	TableBlockers              = "blockers"
 	TableDecisionEvidenceLinks = "decision_evidence_links"
+	TableDecisionStatus        = "decision_status"
 	TableSchemaMigrations      = "_schema_migrations"
 )
 
@@ -39,6 +40,13 @@ const (
 const (
 	BlockerStatusOpen     = "open"
 	BlockerStatusResolved = "resolved"
+)
+
+// Decision status values.
+const (
+	DecisionStatusAccepted   = "accepted"
+	DecisionStatusSuperseded = "superseded"
+	DecisionStatusRejected   = "rejected"
 )
 
 // Session mode values (non-exhaustive; user can set arbitrary modes).

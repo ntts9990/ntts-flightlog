@@ -1,7 +1,10 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/ntts9990/ntts-flightlog/internal/db"
+	"github.com/ntts9990/ntts-flightlog/internal/worklog"
 	"github.com/spf13/cobra"
 )
 
@@ -22,8 +25,43 @@ func newDecisionCmd() *cobra.Command {
 				return err
 			}
 			defer s.close()
-			return writeEntry(s, db.KindDecision, title, detail)
+			return writeDecision(s, title, detail)
 		},
 	}
 	return cmd
+}
+
+func writeDecision(s *session, title, detail string) error {
+	if err := worklog.EnsureMainMd(s.cfg, ""); err != nil {
+		return err
+	}
+	decisionID, err := insertEntry(s, db.KindDecision, title, detail)
+	if err != nil {
+		return fmt.Errorf("writeDecision: %w", err)
+	}
+	if err := insertDecisionStatus(s, decisionID, db.DecisionStatusAccepted, "", "", ""); err != nil {
+		return err
+	}
+	if err := worklog.AppendEntry(s.cfg, db.KindDecision, title, detail); err != nil {
+		return err
+	}
+	maybeReminderAnchor(s)
+	return nil
+}
+
+func insertDecisionStatus(s *session, decisionID, status, supersededBy, supersededAt, rationale string) error {
+	const q = `INSERT INTO decision_status
+		(decision_entry_id, status, superseded_by_entry_id, superseded_at, rationale)
+		VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT(decision_entry_id) DO UPDATE SET
+			status = excluded.status,
+			superseded_by_entry_id = excluded.superseded_by_entry_id,
+			superseded_at = excluded.superseded_at,
+			rationale = excluded.rationale`
+	if _, err := s.store.Exec(q,
+		decisionID, status, nullStr(supersededBy), nullStr(supersededAt), nullStr(rationale),
+	); err != nil {
+		return fmt.Errorf("insert decision status: %w", err)
+	}
+	return nil
 }

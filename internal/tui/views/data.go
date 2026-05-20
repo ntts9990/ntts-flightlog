@@ -67,6 +67,15 @@ type DecisionEvidenceLink struct {
 	EvidenceEntryID string
 }
 
+// DecisionState represents ADR-lite lifecycle state for a decision entry.
+type DecisionState struct {
+	DecisionEntryID     string
+	Status              string
+	SupersededByEntryID sql.NullString
+	SupersededAt        sql.NullString
+	Rationale           sql.NullString
+}
+
 // WorklogData holds all data needed to render the TUI views.
 type WorklogData struct {
 	Sessions              []Session
@@ -74,6 +83,7 @@ type WorklogData struct {
 	Entries               []Entry
 	Blockers              []Blocker
 	DecisionEvidenceLinks []DecisionEvidenceLink
+	DecisionStates        []DecisionState
 }
 
 // LoadAll queries all worklog data from SQLite in display order.
@@ -98,12 +108,17 @@ func LoadAll(d *db.DB) (*WorklogData, error) {
 	if err != nil {
 		return nil, fmt.Errorf("tui: load decision evidence links: %w", err)
 	}
+	decisionStates, err := loadDecisionStates(d)
+	if err != nil {
+		return nil, fmt.Errorf("tui: load decision states: %w", err)
+	}
 	return &WorklogData{
 		Sessions:              sessions,
 		Turns:                 turns,
 		Entries:               entries,
 		Blockers:              blockers,
 		DecisionEvidenceLinks: links,
+		DecisionStates:        decisionStates,
 	}, nil
 }
 
@@ -215,6 +230,28 @@ func loadDecisionEvidenceLinks(d *db.DB) ([]DecisionEvidenceLink, error) {
 	return links, rows.Err()
 }
 
+func loadDecisionStates(d *db.DB) ([]DecisionState, error) {
+	rows, err := d.Query(`
+		SELECT decision_entry_id, status, superseded_by_entry_id, superseded_at, rationale
+		FROM decision_status ORDER BY decision_entry_id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var states []DecisionState
+	for rows.Next() {
+		var state DecisionState
+		if err := rows.Scan(
+			&state.DecisionEntryID, &state.Status, &state.SupersededByEntryID,
+			&state.SupersededAt, &state.Rationale,
+		); err != nil {
+			return nil, err
+		}
+		states = append(states, state)
+	}
+	return states, rows.Err()
+}
+
 // SeqSum returns a change-detection counter: sum of row counts across key tables.
 // When this value increases the caller should reload data from DB.
 func SeqSum(d *db.DB) (int64, error) {
@@ -224,7 +261,8 @@ func SeqSum(d *db.DB) (int64, error) {
 		       (SELECT COUNT(*) FROM turns) +
 		       (SELECT COUNT(*) FROM sessions) +
 		       (SELECT COUNT(*) FROM blockers) +
-		       (SELECT COUNT(*) FROM decision_evidence_links)
+		       (SELECT COUNT(*) FROM decision_evidence_links) +
+		       (SELECT COUNT(*) FROM decision_status)
 	`).Scan(&sum)
 	return sum, err
 }

@@ -493,6 +493,63 @@ func TestEvidenceCmd_WithAmbiguousLink(t *testing.T) {
 	}
 }
 
+func TestDecisionSupersedeCmd_ByTitle(t *testing.T) {
+	setupEnv(t)
+	if err := newStartCmd().RunE(newStartCmd(), []string{"결정 대체 세션"}); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if err := newTurnStartCmd().RunE(newTurnStartCmd(), []string{"결정 대체 턴"}); err != nil {
+		t.Fatalf("turn-start: %v", err)
+	}
+	if err := newDecisionCmd().RunE(newDecisionCmd(), []string{"SQLite renderer 유지", "기존 결정"}); err != nil {
+		t.Fatalf("decision: %v", err)
+	}
+	if err := newDecisionSupersedeCmd().RunE(newDecisionSupersedeCmd(), []string{"SQLite renderer", "Sidecar renderer 유지", "view 의미가 더 정확함"}); err != nil {
+		t.Fatalf("decision-supersede: %v", err)
+	}
+
+	s, err := openSession()
+	if err != nil {
+		t.Fatalf("openSession: %v", err)
+	}
+	defer s.close()
+
+	var acceptedCount, supersededCount int
+	if err := s.store.QueryRow(`SELECT COUNT(*) FROM decision_status WHERE status = 'accepted'`).Scan(&acceptedCount); err != nil {
+		t.Fatalf("query accepted decisions: %v", err)
+	}
+	if err := s.store.QueryRow(`SELECT COUNT(*) FROM decision_status WHERE status = 'superseded'`).Scan(&supersededCount); err != nil {
+		t.Fatalf("query superseded decisions: %v", err)
+	}
+	if acceptedCount != 1 || supersededCount != 1 {
+		t.Fatalf("decision status counts accepted=%d superseded=%d, want 1/1", acceptedCount, supersededCount)
+	}
+
+	var rationale *string
+	if err := s.store.QueryRow(`SELECT rationale FROM decision_status WHERE status = 'superseded'`).Scan(&rationale); err != nil {
+		t.Fatalf("query supersede rationale: %v", err)
+	}
+	if rationale == nil || *rationale != "view 의미가 더 정확함" {
+		t.Fatalf("rationale = %v, want view 의미가 더 정확함", rationale)
+	}
+}
+
+func TestDecisionSupersedeCmd_AmbiguousOldDecision(t *testing.T) {
+	setupEnv(t)
+	if err := newStartCmd().RunE(newStartCmd(), []string{"결정 모호성 세션"}); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if err := newDecisionCmd().RunE(newDecisionCmd(), []string{"API 유지"}); err != nil {
+		t.Fatalf("decision 1: %v", err)
+	}
+	if err := newDecisionCmd().RunE(newDecisionCmd(), []string{"API 변경"}); err != nil {
+		t.Fatalf("decision 2: %v", err)
+	}
+	if err := newDecisionSupersedeCmd().RunE(newDecisionSupersedeCmd(), []string{"API", "API 동결"}); err == nil {
+		t.Fatal("decision-supersede should reject ambiguous old decision matches")
+	}
+}
+
 // ── migrate extra branches ────────────────────────────────────────────────
 
 // TestMigrateCmd_Down exercises the "down" direction branch.

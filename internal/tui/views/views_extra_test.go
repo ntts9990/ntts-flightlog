@@ -367,6 +367,9 @@ func TestRenderDecisions_WithDecisions(t *testing.T) {
 		DecisionEvidenceLinks: []views.DecisionEvidenceLink{
 			{DecisionEntryID: "e2", EvidenceEntryID: "e3"},
 		},
+		DecisionStates: []views.DecisionState{
+			{DecisionEntryID: "e2", Status: "accepted"},
+		},
 	}
 	got := views.RenderDecisions(data)
 	if !strings.Contains(got, "중요 결정") {
@@ -381,9 +384,30 @@ func TestRenderDecisions_WithDecisions(t *testing.T) {
 	if strings.Contains(got, "일반") {
 		t.Error("RenderDecisions: should not include non-decision entry")
 	}
-	for _, want := range []string{"turn-1", "결정 턴", "linked 1", "same-turn 1"} {
+	for _, want := range []string{"유효한 결정", "상태: accepted", "turn-1", "결정 턴", "linked 1", "same-turn 1"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("RenderDecisions: missing %q in:\n%s", want, got)
+		}
+	}
+}
+
+func TestRenderDecisions_GroupsSuperseded(t *testing.T) {
+	data := &views.WorklogData{
+		Entries: []views.Entry{
+			{ID: "old-decision", SessionID: "s1", Kind: "decision", Title: "옛 결정", CreatedAt: "2026-05-20T10:00:00Z"},
+			{ID: "new-decision", SessionID: "s1", Kind: "decision", Title: "새 결정", CreatedAt: "2026-05-20T10:01:00Z"},
+		},
+		DecisionStates: []views.DecisionState{
+			{DecisionEntryID: "old-decision", Status: "superseded",
+				SupersededByEntryID: sql.NullString{String: "new-decision", Valid: true},
+				Rationale:           sql.NullString{String: "더 나은 경로", Valid: true}},
+			{DecisionEntryID: "new-decision", Status: "accepted"},
+		},
+	}
+	got := views.RenderDecisions(data)
+	for _, want := range []string{"유효한 결정", "새 결정", "대체된 결정", "옛 결정", "상태: superseded", "대체됨: new-deci", "사유: 더 나은 경로"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("RenderDecisions superseded: missing %q in:\n%s", want, got)
 		}
 	}
 }
@@ -505,6 +529,9 @@ func TestLoadAll_WithData(t *testing.T) {
 	if _, err := d.Exec(`INSERT INTO decision_evidence_links (decision_entry_id, evidence_entry_id, created_at) VALUES (?, ?, '2026-05-20T10:04:00Z')`, decisionID, evidenceID); err != nil {
 		t.Fatalf("insert decision evidence link: %v", err)
 	}
+	if _, err := d.Exec(`INSERT INTO decision_status (decision_entry_id, status) VALUES (?, 'accepted')`, decisionID); err != nil {
+		t.Fatalf("insert decision status: %v", err)
+	}
 	if _, err := d.Exec(`INSERT INTO blockers (turn_id, entry_id, title, opened_at) VALUES (?, ?, '로드 블로커', '2026-05-20T10:05:00Z')`, turnID, decisionID); err != nil {
 		t.Fatalf("insert blocker: %v", err)
 	}
@@ -522,12 +549,15 @@ func TestLoadAll_WithData(t *testing.T) {
 	if len(wd.DecisionEvidenceLinks) != 1 {
 		t.Errorf("LoadAll with data: DecisionEvidenceLinks = %d, want 1", len(wd.DecisionEvidenceLinks))
 	}
+	if len(wd.DecisionStates) != 1 {
+		t.Errorf("LoadAll with data: DecisionStates = %d, want 1", len(wd.DecisionStates))
+	}
 
 	sum, err := views.SeqSum(d)
 	if err != nil {
 		t.Fatalf("SeqSum with session: %v", err)
 	}
-	if sum != 6 {
-		t.Errorf("SeqSum with full fixture = %d, want 6", sum)
+	if sum != 7 {
+		t.Errorf("SeqSum with full fixture = %d, want 7", sum)
 	}
 }

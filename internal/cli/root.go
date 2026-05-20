@@ -50,6 +50,7 @@ func init() {
 		newTurnEndCmd(),
 		newEntryCmd(),
 		newDecisionCmd(),
+		newDecisionSupersedeCmd(),
 		newEvidenceCmd(),
 		newBlockerCmd(),
 		newBlockerResolveCmd(),
