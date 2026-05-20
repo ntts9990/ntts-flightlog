@@ -189,6 +189,13 @@ scripts/sanity_3_agents_tmux.sh
 
 The check writes `docs/e0-3-agent-tmux-sanity.md` and verifies `claude`, `codex`, and `gemini` inside tmux panes when those CLIs are installed.
 
+For Phase E evidence readiness:
+
+```bash
+scripts/phase_e_readiness.sh          # advisory while evidence is being collected
+scripts/phase_e_readiness.sh --strict # GA-blocking readiness check
+```
+
 ## Privacy and Scope
 
 All state is written under `.ntts-flightlog/` in the repository where you run the CLI. Metrics stay local in SQLite. Generated worklogs, runtime state, build artifacts, and coverage files are intentionally ignored by git.

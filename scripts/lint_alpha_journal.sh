@@ -29,7 +29,11 @@ for pat in "${required[@]}"; do
 done
 
 entry_count="$(grep -Ec '^### [0-9]{4}-[0-9]{2}-[0-9]{2}' "$DOC" || true)"
-changed_count="$(grep -Ec '\[CHANGED-BY-METRIC: [a-z_]+\]' "$DOC" || true)"
+changed_count="$(awk '
+  /^### [0-9]{4}-[0-9]{2}-[0-9]{2}/ { in_entries=1 }
+  in_entries && /\[CHANGED-BY-METRIC: [a-z_]+\]/ { count++ }
+  END { print count + 0 }
+' "$DOC")"
 
 if [[ "$entry_count" -eq 0 ]]; then
   echo "PASS: journal scaffold present; no dated entries yet"

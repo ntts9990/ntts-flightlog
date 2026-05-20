@@ -225,3 +225,10 @@ jobs:
           else
             echo "docs/v2-ga-acceptance-evidence.md absent — skipping (arrives in Phase E)"
           fi
+      - name: Check Phase E readiness scaffold
+        run: |
+          if [ -f "scripts/phase_e_readiness.sh" ]; then
+            bash scripts/phase_e_readiness.sh
+          else
+            echo "scripts/phase_e_readiness.sh absent — skipping"
+          fi
