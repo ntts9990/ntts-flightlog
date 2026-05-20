@@ -1,0 +1,101 @@
+# GoReleaser v2 configuration
+# Targets: darwin/arm64, darwin/amd64, linux/amd64, linux/arm64, windows/amd64
+# CGO_ENABLED=0 required — modernc.org/sqlite is pure-Go (no CGo)
+version: 2
+
+project_name: flightlog
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: flightlog
+    main: ./cmd/flightlog
+    binary: flightlog
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      # windows/arm64 excluded per plan R4
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - id: flightlog
+    ids:
+      - flightlog
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-SNAPSHOT-{{ .ShortCommit }}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+
+# Homebrew tap — publishes Formula/flightlog.rb to ntts9990/homebrew-tap
+# Requires HOMEBREW_TAP_GITHUB_TOKEN secret in CI
+homebrew_casks:
+  - name: flightlog
+    ids:
+      - flightlog
+    repository:
+      owner: ntts9990
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+    homepage: "https://github.com/ntts9990/ntts-flightlog"
+    description: "항공일지 CLI — flightlog v2"
+    skip_upload: auto
+
+# Scoop bucket — publishes flightlog.json to ntts9990/scoop-bucket
+# Requires SCOOP_BUCKET_GITHUB_TOKEN secret in CI
+scoops:
+  - name: flightlog
+    ids:
+      - flightlog
+    repository:
+      owner: ntts9990
+      name: scoop-bucket
+      branch: main
+      token: "{{ .Env.SCOOP_BUCKET_GITHUB_TOKEN }}"
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    commit_msg_template: "Scoop update for {{ .ProjectName }} version {{ .Tag }}"
+    homepage: "https://github.com/ntts9990/ntts-flightlog"
+    description: "항공일지 CLI — flightlog v2"
+    skip_upload: auto

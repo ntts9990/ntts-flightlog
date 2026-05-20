@@ -59,6 +59,7 @@ func init() {
 		newReportCmd(),
 		newRefreshAnchorCmd(),
 		newDriftCheckCmd(),
+		newSelfUpgradeCmd(),
 	)
 }
 
