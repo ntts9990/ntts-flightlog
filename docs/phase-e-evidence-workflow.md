@@ -19,6 +19,7 @@ Use these source artifacts:
 - Self-retro: `.omc/specs/alpha-dogfood-log.md`
 - Agent-operator: `.omc/specs/v2-agent-operator-decisions.md`
 - Team-share: `.omc/specs/v2-team-share-report.md`
+- Adversarial review: `.omc/specs/v2-adversarial-review.md`
 - Final summary: `docs/v2-ga-acceptance-evidence.md`
 
 Each persona must cite at least four of the five metrics with concrete values and interpretation:
@@ -32,6 +33,8 @@ Each persona must cite at least four of the five metrics with concrete values an
 ## 3. Run Adversarial Review
 
 Use `docs/adversarial-review-framework.md` from a separate review session. Save the result as `.omc/specs/v2-adversarial-review.md` and link it from `docs/v2-ga-acceptance-evidence.md`.
+
+The review should not rewrite the evidence. It should identify missing concrete values, gate-driven citations, weak interpretation, and insufficient external acknowledgement.
 
 ## 4. Check Readiness
 

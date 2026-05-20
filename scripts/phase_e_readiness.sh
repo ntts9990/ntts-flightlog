@@ -36,6 +36,9 @@ echo "mode: $([[ $STRICT -eq 1 ]] && echo strict || echo advisory)"
 echo
 
 check_file ".omc/specs/alpha-dogfood-log.md"
+check_file ".omc/specs/v2-agent-operator-decisions.md"
+check_file ".omc/specs/v2-team-share-report.md"
+check_file ".omc/specs/v2-adversarial-review.md"
 check_file "docs/v2-ga-acceptance-evidence.md"
 check_file "docs/phase-e-persona-recruitment.md"
 check_file "docs/adversarial-review-framework.md"
@@ -63,8 +66,14 @@ for agent in claude codex gemini; do
   fi
 done
 
-todo_count="$(grep -RInE 'TODO|_to be filled|placeholder' \
-  docs/v2-ga-acceptance-evidence.md .omc/specs/alpha-dogfood-log.md 2>/dev/null | wc -l | tr -d ' ')"
+phase_e_sources=(
+  "docs/v2-ga-acceptance-evidence.md"
+  ".omc/specs/alpha-dogfood-log.md"
+  ".omc/specs/v2-agent-operator-decisions.md"
+  ".omc/specs/v2-team-share-report.md"
+  ".omc/specs/v2-adversarial-review.md"
+)
+todo_count="$(grep -RInE 'TODO|_to be filled|placeholder' "${phase_e_sources[@]}" 2>/dev/null | wc -l | tr -d ' ')"
 entry_count="$(grep -Ec '^### [0-9]{4}-[0-9]{2}-[0-9]{2}' .omc/specs/alpha-dogfood-log.md 2>/dev/null || true)"
 changed_count="$(awk '
   /^### [0-9]{4}-[0-9]{2}-[0-9]{2}/ { in_entries=1 }
