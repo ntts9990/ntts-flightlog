@@ -1,0 +1,6 @@
+{
+  "env": {"CODEX_HOME": "/home/user/.codex"},
+  "ppid_chain": ["codex"],
+  "expected_detected": "codex",
+  "expected_signals_contains": ["env:CODEX_HOME", "ppid:codex"]
+}

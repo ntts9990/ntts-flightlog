@@ -1,0 +1,6 @@
+{
+  "env": {"GEMINI_API_KEY": "AIzaSyTestKey1234567890abcdefghijklmnop"},
+  "ppid_chain": ["gemini"],
+  "expected_detected": "gemini",
+  "expected_signals_contains": ["env:GEMINI_API_KEY", "ppid:gemini"]
+}

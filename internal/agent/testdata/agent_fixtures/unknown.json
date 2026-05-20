@@ -1,0 +1,6 @@
+{
+  "env": {},
+  "ppid_chain": ["bash"],
+  "expected_detected": "unknown",
+  "expected_signals_contains": []
+}

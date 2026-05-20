@@ -1,0 +1,6 @@
+{
+  "env": {"CLAUDE_DESKTOP_VERSION": "0.7.5"},
+  "ppid_chain": ["claude-desktop"],
+  "expected_detected": "claude",
+  "expected_signals_contains": ["env:CLAUDE_DESKTOP_VERSION", "ppid:claude-desktop"]
+}

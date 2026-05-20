@@ -2,3 +2,15 @@
 .omx/
 *.log
 tmp/
+
+# v2 ephemeral state (specs/plans are tracked, state/handoffs/memory are not)
+.ntts-flightlog/
+.omc/state/
+.omc/sessions/
+.omc/handoffs/
+.omc/project-memory.json
+.omc/worktrees/
+
+# Go build output
+/flightlog
+/dist/
