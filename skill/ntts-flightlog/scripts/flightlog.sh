@@ -59,6 +59,7 @@ Usage:
   ntts-flightlog path                # absolute path of main worklog file
   ntts-flightlog turn-path [N]       # absolute path of turn N (or current turn)
   ntts-flightlog view <flat|turns|decisions|blockers|report>  # one-shot ANSI render
+  ntts-flightlog doctor              # local install/worklog preflight
 
 In-pane view menu (when launched via `auto`/`start` inside tmux):
   [1] flat   [2] turns   [3] decisions   [4] blockers   [5] report   [r] reload   [q] quit
@@ -699,6 +700,18 @@ case "${cmd}" in
     shift
     [[ $# -ge 1 ]] || { usage; exit 2; }
     render_view "$1"
+    ;;
+  doctor)
+    ensure_worklog
+    printf 'NTTS Flightlog doctor\n'
+    printf 'binary: legacy bash fallback\n'
+    printf 'worklog_dir: %s\n' "${WORKLOG_DIR}"
+    printf 'db: unavailable in legacy bash fallback\n'
+    if pane_alive; then
+      printf 'tmux_pane: alive (%s)\n' "$(cat "${PANE_FILE}")"
+    else
+      printf 'tmux_pane: not running\n'
+    fi
     ;;
   -h|--help|help|"")
     usage

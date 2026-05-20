@@ -60,6 +60,7 @@ func init() {
 		newMigrateCmd(),
 		newReportCmd(),
 		newAgentStatsCmd(),
+		newDoctorCmd(),
 		newRefreshAnchorCmd(),
 		newDriftCheckCmd(),
 		newSelfUpgradeCmd(),

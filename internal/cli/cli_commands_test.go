@@ -129,6 +129,11 @@ func TestReportCmd_DayWindow(t *testing.T) {
 	execRunE(t, cmd, false)
 }
 
+func TestDoctorCmd(t *testing.T) {
+	setupEnv(t)
+	execRunE(t, newDoctorCmd(), false)
+}
+
 // TestViewCmd_AllModes exercises all one-shot view modes.
 func TestViewCmd_AllModes(t *testing.T) {
 	setupEnv(t)

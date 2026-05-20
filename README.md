@@ -109,6 +109,7 @@ ntts-flightlog blocker <title> [detail]
 ntts-flightlog blocker-resolve <id-or-title> [resolution]
 ntts-flightlog report [--format text|json] [--window day|week|all] [--agent name]
 ntts-flightlog agent-stats [--format text|json] [--window day|week|all] [--agent name]
+ntts-flightlog doctor
 ntts-flightlog refresh-anchor [turn_id]
 ntts-flightlog drift-check [turn_id]
 ntts-flightlog path                                  # absolute path of main worklog file
