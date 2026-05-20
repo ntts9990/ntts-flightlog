@@ -34,7 +34,21 @@ install_cli() {
   printf 'Fetching latest flightlog release...\n'
   local tag; tag="$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null \
     | grep '"tag_name"' | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')" || true
-  [[ -z "$tag" ]] && { printf 'Warning: no release found for %s — skipping binary install.\n' "$REPO"; return 0; }
+  if [[ -z "$tag" ]]; then
+    if command -v go >/dev/null 2>&1 && [[ -f "$REPO_ROOT/cmd/flightlog/main.go" ]]; then
+      mkdir -p "$LOCAL_BIN_DIR"
+      printf 'No release found for %s — building local Go CLI instead.\n' "$REPO"
+      local build_tmp
+      build_tmp="$(mktemp "${TMPDIR:-/tmp}/ntts-flightlog.XXXXXX")"
+      go build -ldflags "-s -w -X main.version=local" -o "$build_tmp" "$REPO_ROOT/cmd/flightlog"
+      mv "$build_tmp" "$LOCAL_BIN_DIR/ntts-flightlog"
+      chmod +x "$LOCAL_BIN_DIR/ntts-flightlog"
+      printf 'Installed local flightlog build → %s/ntts-flightlog\n' "$LOCAL_BIN_DIR"
+      return 0
+    fi
+    printf 'Warning: no release found for %s and Go is unavailable — skipping binary install.\n' "$REPO"
+    return 0
+  fi
   local ver ext base url tmp
   ver="${tag#v}"; ext=tar.gz; [[ "$os" == windows ]] && ext=zip
   base="flightlog_${ver}_${os}_${arch}"; url="https://github.com/$REPO/releases/download/$tag"
@@ -50,11 +64,11 @@ install_cli() {
   [[ "$got" == "$want" ]] || die "Checksum mismatch (got $got, want $want)"
   mkdir -p "$LOCAL_BIN_DIR"
   if [[ "$ext" == zip ]]; then
-    unzip -q "$tmp/$base.$ext" flightlog.exe -d "$tmp"; cp "$tmp/flightlog.exe" "$LOCAL_BIN_DIR/"
+    unzip -q "$tmp/$base.$ext" flightlog.exe -d "$tmp"; cp "$tmp/flightlog.exe" "$LOCAL_BIN_DIR/ntts-flightlog.exe"
     printf 'Installed flightlog %s → %s/flightlog.exe\n' "$tag" "$LOCAL_BIN_DIR"
   else
-    tar -xzf "$tmp/$base.$ext" -C "$tmp" flightlog; cp "$tmp/flightlog" "$LOCAL_BIN_DIR/"; chmod +x "$LOCAL_BIN_DIR/flightlog"
-    printf 'Installed flightlog %s → %s/flightlog\n' "$tag" "$LOCAL_BIN_DIR"
+    tar -xzf "$tmp/$base.$ext" -C "$tmp" flightlog; cp "$tmp/flightlog" "$LOCAL_BIN_DIR/ntts-flightlog"; chmod +x "$LOCAL_BIN_DIR/ntts-flightlog"
+    printf 'Installed flightlog %s → %s/ntts-flightlog\n' "$tag" "$LOCAL_BIN_DIR"
   fi
   case ":$PATH:" in *":$LOCAL_BIN_DIR:"*) ;; *) printf 'Note: add %s to $PATH\n' "$LOCAL_BIN_DIR" ;; esac
 }

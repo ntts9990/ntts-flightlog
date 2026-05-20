@@ -1,6 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Compatibility wrapper: ntts-flightlog v2 is the Go CLI. Keep this script path
+# for installed agent skills, but delegate to the compiled binary whenever it is
+# available. Set NTTS_FLIGHTLOG_LEGACY_BASH=1 only for emergency legacy fallback.
+if [[ "${NTTS_FLIGHTLOG_LEGACY_BASH:-0}" != "1" ]]; then
+  script_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+  if [[ -n "${NTTS_FLIGHTLOG_BIN:-}" && -x "${NTTS_FLIGHTLOG_BIN}" ]]; then
+    exec "${NTTS_FLIGHTLOG_BIN}" "$@"
+  fi
+  if command -v ntts-flightlog >/dev/null 2>&1; then
+    cli_path="$(command -v ntts-flightlog)"
+    if [[ "$(cd "$(dirname "${cli_path}")" && pwd)/$(basename "${cli_path}")" != "${script_path}" ]]; then
+      exec "${cli_path}" "$@"
+    fi
+  fi
+  if command -v flightlog >/dev/null 2>&1; then
+    exec flightlog "$@"
+  fi
+fi
+
 find_default_worklog_dir() {
   if [[ -d ".ntts-flightlog" ]]; then
     printf '%s\n' ".ntts-flightlog"; return

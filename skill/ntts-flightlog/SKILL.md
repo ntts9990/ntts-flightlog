@@ -1,6 +1,6 @@
 ---
 name: ntts-flightlog
-description: Keep a concise live flightlog for the current task and show it in a tmux side pane while the agent works. Use when the user wants main-task progress documented clearly, visible in terminal, or tracked alongside parallel/team-style work without necessarily using team mode. Works with any CLI coding agent (Claude Code, Codex, Gemini, etc.) with no external dependencies beyond bash/tmux/awk.
+description: Keep a concise live flightlog for the current task and show it in a tmux side pane while the agent works. Use when the user wants main-task progress documented clearly, visible in terminal, or tracked alongside parallel/team-style work without necessarily using team mode. Works with any CLI coding agent (Claude Code, Codex, Gemini, etc.) through the Go-based ntts-flightlog CLI.
 ---
 
 # NTTS Flightlog
@@ -16,7 +16,7 @@ Use this skill to maintain a short, structured flightlog while the agent works. 
 - Avoid flicker: redraw in place, and use file-change redraw when `fswatch` is available.
 - Support closure: every `turn-start` should end with `turn-end` so incomplete work is visible.
 - Preserve scanability: use stable headings and short lines rather than prose-heavy logs.
-- Agent-agnostic: depends only on `bash`, `tmux`, and `awk` (with optional `fswatch`/`glow`). No coupling to Codex, Claude Code, Gemini, oh-my-codex, or oh-my-claudecode.
+- Agent-agnostic: the primary runtime is the Go-based `ntts-flightlog` CLI. The installed `scripts/flightlog.sh` path is kept as a compatibility wrapper and delegates to the Go CLI when available. No coupling to Codex, Claude Code, Gemini, oh-my-codex, or oh-my-claudecode.
 
 For future revisions, see `references/design-rationale.md`.
 
@@ -33,7 +33,7 @@ For future revisions, see `references/design-rationale.md`.
 
 ## Core Workflow
 
-The script is callable as either the installed CLI (`ntts-flightlog`, when `~/.local/bin` is on PATH) or via the absolute skill path. Examples below use the CLI for portability.
+The skill should call the installed Go CLI (`ntts-flightlog`, when `~/.local/bin` is on PATH). The absolute skill script path remains available for older agent instructions, but it delegates to the Go CLI when installed. Examples below use the CLI for portability.
 
 1. Start the pane before multi-step work:
 
@@ -70,7 +70,7 @@ The script is callable as either the installed CLI (`ntts-flightlog`, when `~/.l
    ntts-flightlog stop
    ```
 
-If the CLI is not on PATH, call the skill script directly:
+If the CLI is not on PATH, call the skill script directly. It will delegate to `ntts-flightlog`, `flightlog`, or `NTTS_FLIGHTLOG_BIN` when one is available:
 
 ```bash
 # Claude Code install
