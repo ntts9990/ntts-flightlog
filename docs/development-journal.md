@@ -20,6 +20,7 @@ Recent product work added:
 - `share --window day|week|all --format md|json`
 - metric highlights in share output
 - `handoff --format text|md|json` as a first-class continuation artifact
+- storage and redaction policy for future hook/event ingest
 - product boundary documentation in `docs/current-state.md`,
   `docs/product-direction.md`, and
   `docs/user-investor-question-decisions.md`
@@ -62,8 +63,8 @@ agents can write to one worklog today, but parallel worker lanes still depend on
 one global active turn pointer. Until explicit lane tracking exists, agent
 comparison should remain conservative.
 
-Hook/event ingest is intentionally not shipped yet. Automated ingest must wait
-for storage and redaction policy that defines:
+Hook/event ingest is intentionally not shipped yet. Automated ingest is gated by
+`docs/storage-redaction-policy.md`, which defines:
 
 - stored fields
 - dropped fields

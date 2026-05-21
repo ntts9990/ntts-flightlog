@@ -2,8 +2,8 @@
   "project_id": "ntts-flightlog",
   "project_name": "NTTS Flightlog",
   "source_path": "/Users/sungyub/Documents/Projects/ntts-flightlog",
-  "source_commit": "a092043910739f7e5e88c62bc6505fdf74110e6c",
-  "updated_at": "2026-05-21T04:30:00Z",
+  "source_commit": "3ec2530f1dff627382a8b64ac0edae4fd7c4ebac",
+  "updated_at": "2026-05-21T04:45:00Z",
   "classification": "trusted-runtime",
   "development_status": {
     "summary": "Local-first Go CLI and tmux sidecar for long-running AI coding sessions. It records turns, entries, decisions, evidence, blockers, handoffs, attention items, share packets, report metrics, and agent attribution into repo-local SQLite while mirroring a readable markdown worklog.",
@@ -11,15 +11,14 @@
       "Added attention command and report-view attention surfacing for stale blockers, evidence gaps, drift, long turns, and agent attribution warnings.",
       "Added share command for portable Markdown or JSON team status packets.",
       "Made handoff a first-class continuation artifact for compaction, restart, agent switching, and reviewer context.",
+      "Added storage and redaction policy as the gate for future hook/event ingest.",
       "Clarified product boundary around a local-first terminal sidecar instead of a cloud dashboard, raw transcript archive, or agent runner."
     ],
     "active_work": [
-      "Prepare AI Tool Suite handoff packet and adapter contract.",
-      "Keep storage/redaction policy as the prerequisite for any future automated hook/event ingest.",
+      "Use the storage/redaction policy as the prerequisite for any future automated hook/event ingest.",
       "Preserve local-only operation and Korean-first pane output while adding more structured machine-readable surfaces."
     ],
     "next_priorities": [
-      "Write storage and redaction policy before shipping hook/event ingest.",
       "Add lane/team attribution for parallel subagent work.",
       "Add bounded ingest command for redacted hook events and reviewable evidence/blocker candidates.",
       "Add hook starter kits only after redaction and retention rules are documented.",
@@ -142,6 +141,7 @@
       "agent attribution rates until lane/team tracking lands",
       "future hook/event ingest fields",
       "future lane/team metadata fields",
+      "optional redacted hook payload retention controls",
       "pane-rendered text layout"
     ]
   },
@@ -172,7 +172,7 @@
     }
   ],
   "known_risks": [
-    "Hook/event ingest is not safe to add until storage, redaction, dropped-field, and retention policy is explicit.",
+    "Hook/event ingest must follow docs/storage-redaction-policy.md and must not store unredacted payloads by default.",
     "Parallel subagent tracking currently depends on one global active turn unless lane/team tracking is added.",
     "Pane-visible text is optimized for Korean terminal operation and should not be treated as a stable machine contract.",
     "Generated runtime state can contain local project context and should remain gitignored."

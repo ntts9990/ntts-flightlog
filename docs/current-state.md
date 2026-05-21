@@ -321,8 +321,8 @@ Planned ingest contract:
 
 Important ownership rule:
 
-- Storage and redaction policy must be documented before hook/event ingest
-  ships.
+- Storage and redaction policy is documented in
+  `docs/storage-redaction-policy.md` and must gate future hook/event ingest.
 - Hook ingest must not store unredacted raw payloads by default.
 - Raw event streams must stay hidden by default unless promoted into useful
   operator state.
@@ -354,8 +354,9 @@ not now:
 Immediate product sequence:
 
 1. Finalize and commit the current attention/share/product-scope work.
-2. Add `docs/storage-redaction-policy.md`.
-3. Implement lane/team tracking only after storage/redaction direction is clear.
+2. Use `docs/storage-redaction-policy.md` as the safety boundary for future
+   automated ingest.
+3. Implement lane/team tracking.
 4. Implement bounded hook/event ingest.
 5. Add hook starter kits as opt-in printed snippets and diagnostics.
 6. Add evidence automation wrappers.
@@ -402,6 +403,7 @@ Done or attached in the product:
 - `handoff` continuation packet.
 - `attention` action queue.
 - `share` portable team/reviewer status export.
+- Storage and redaction policy for future automated hook payloads.
 - Phase E evidence workflow documentation.
 - Product boundary documentation.
 
@@ -409,7 +411,6 @@ Done or attached in the product:
 
 Not done or not yet attached:
 
-- Storage/redaction policy for automated hook payloads.
 - Lane/team tracking.
 - Generic hook/event ingest.
 - Hook starter kits.
@@ -429,10 +430,9 @@ Recommended order:
 
 1. Review the uncommitted attention/share/product-scope diff.
 2. Commit it with the repository Lore Commit Protocol if the diff is accepted.
-3. Add `docs/storage-redaction-policy.md`.
-4. Use that policy as the prerequisite for future `ingest` and hook starter kit
-   implementation.
-5. Then start lane/team tracking, because agent comparison and team value depend
+3. Use `docs/storage-redaction-policy.md` as the prerequisite for future
+   `ingest` and hook starter kit implementation.
+4. Then start lane/team tracking, because agent comparison and team value depend
    on trustworthy parallel ownership data.
 
 Useful commands:
