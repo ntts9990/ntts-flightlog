@@ -1,0 +1,186 @@
+{
+  "project_id": "ntts-flightlog",
+  "project_name": "NTTS Flightlog",
+  "source_path": "/Users/sungyub/Documents/Projects/ntts-flightlog",
+  "source_commit": "a092043910739f7e5e88c62bc6505fdf74110e6c",
+  "updated_at": "2026-05-21T04:30:00Z",
+  "classification": "trusted-runtime",
+  "development_status": {
+    "summary": "Local-first Go CLI and tmux sidecar for long-running AI coding sessions. It records turns, entries, decisions, evidence, blockers, handoffs, attention items, share packets, report metrics, and agent attribution into repo-local SQLite while mirroring a readable markdown worklog.",
+    "recent_changes": [
+      "Added attention command and report-view attention surfacing for stale blockers, evidence gaps, drift, long turns, and agent attribution warnings.",
+      "Added share command for portable Markdown or JSON team status packets.",
+      "Made handoff a first-class continuation artifact for compaction, restart, agent switching, and reviewer context.",
+      "Clarified product boundary around a local-first terminal sidecar instead of a cloud dashboard, raw transcript archive, or agent runner."
+    ],
+    "active_work": [
+      "Prepare AI Tool Suite handoff packet and adapter contract.",
+      "Keep storage/redaction policy as the prerequisite for any future automated hook/event ingest.",
+      "Preserve local-only operation and Korean-first pane output while adding more structured machine-readable surfaces."
+    ],
+    "next_priorities": [
+      "Write storage and redaction policy before shipping hook/event ingest.",
+      "Add lane/team attribution for parallel subagent work.",
+      "Add bounded ingest command for redacted hook events and reviewable evidence/blocker candidates.",
+      "Add hook starter kits only after redaction and retention rules are documented.",
+      "Add evidence-check or evidence-report wrappers over Phase E evidence workflows."
+    ]
+  },
+  "stable_surfaces": [
+    {
+      "kind": "cli",
+      "name": "attention",
+      "command_or_path": "ntts-flightlog attention --format json --window week",
+      "schema_version": "attention.v1",
+      "network_posture": "offline",
+      "required_secrets": [],
+      "stability": "stable",
+      "notes": "Machine-readable operator attention queue derived from local SQLite state."
+    },
+    {
+      "kind": "cli",
+      "name": "share",
+      "command_or_path": "ntts-flightlog share --format json --window week",
+      "schema_version": "share.v1",
+      "network_posture": "offline",
+      "required_secrets": [],
+      "stability": "stable",
+      "notes": "Portable status packet for PRs, issues, email, or team handoff."
+    },
+    {
+      "kind": "cli",
+      "name": "handoff",
+      "command_or_path": "ntts-flightlog handoff --format json",
+      "schema_version": "handoff.v1",
+      "network_posture": "offline",
+      "required_secrets": [],
+      "stability": "stable",
+      "notes": "Continuation packet for compaction, restart, agent switching, and reviewer context."
+    },
+    {
+      "kind": "cli",
+      "name": "report",
+      "command_or_path": "ntts-flightlog report --format json --window week",
+      "schema_version": "report.v1",
+      "network_posture": "offline",
+      "required_secrets": [],
+      "stability": "stable",
+      "notes": "Local metrics summary for work volume, attention, decision evidence coverage, blockers, and agent attribution."
+    },
+    {
+      "kind": "json-artifact",
+      "name": "attention schema fixture",
+      "command_or_path": "testdata/golden/attention_schema.json",
+      "schema_version": "attention.v1",
+      "network_posture": "offline",
+      "required_secrets": [],
+      "stability": "stable",
+      "notes": "Curated fixture for the attention JSON contract."
+    },
+    {
+      "kind": "report-sidecar",
+      "name": "repo-local runtime state",
+      "command_or_path": ".ntts-flightlog/",
+      "schema_version": "runtime-state.v1",
+      "network_posture": "offline",
+      "required_secrets": [],
+      "stability": "stable",
+      "notes": "Generated SQLite database, markdown worklog, turn files, and pane runtime metadata; this path is runtime output, not curated fixture data."
+    }
+  ],
+  "verification_commands": {
+    "install": "go build -o dist/flightlog ./cmd/flightlog",
+    "fast": "go test ./...",
+    "full": "go test ./... -race -count=1 && go test ./e2e -tags=e2e -count=1",
+    "closed_network": "go test ./... && go build -o dist/flightlog ./cmd/flightlog",
+    "artifact_generation": "dist/flightlog attention --format json && dist/flightlog share --format json --window week && dist/flightlog handoff --format json"
+  },
+  "runtime_outputs": {
+    "generated_paths": [
+      ".ntts-flightlog/",
+      "dist/",
+      "cli_coverage.out"
+    ],
+    "fixture_paths": [
+      "testdata/golden/",
+      "e2e/",
+      "internal/**/**/*_test.go"
+    ],
+    "gitignored_paths": [
+      ".ntts-flightlog/",
+      ".omx/",
+      ".omc/",
+      "dist/",
+      "cli_coverage.out"
+    ]
+  },
+  "adapter_impact": {
+    "breaking_changes_since_last_update": [],
+    "new_adapter_opportunities": [
+      "Ingest attention JSON as operator-risk evidence.",
+      "Ingest share JSON as a session-status evidence artifact.",
+      "Ingest handoff JSON as a continuation and context-survival artifact.",
+      "Use report JSON metrics for closed-network operational health summaries."
+    ],
+    "fields_safe_to_rely_on": [
+      "attention.summary",
+      "attention.items[].severity",
+      "attention.items[].source_type",
+      "attention.items[].source_id",
+      "attention.items[].recommended_action",
+      "share.summary",
+      "share.completed_turns[]",
+      "share.active_blockers[]",
+      "share.decisions[]",
+      "share.metric_highlights[]",
+      "handoff.status",
+      "handoff.open_blockers",
+      "handoff.decisions_needing_evidence",
+      "report.window"
+    ],
+    "fields_experimental": [
+      "agent attribution rates until lane/team tracking lands",
+      "future hook/event ingest fields",
+      "future lane/team metadata fields",
+      "pane-rendered text layout"
+    ]
+  },
+  "reusable_patterns": [
+    {
+      "name": "turn-bounded task lifecycle",
+      "description": "A turn captures intent, constraints, done-when, entries, outcome, evidence, blockers, and elapsed time as the primary work unit.",
+      "where_to_look": "internal/cli/turn_start.go, internal/cli/turn_end.go, internal/tui/views/data.go",
+      "why_it_may_help_other_tools": "Gives agents and operators a compact unit of accountability without storing full raw transcripts."
+    },
+    {
+      "name": "attention queue from local operational signals",
+      "description": "Derived attention items convert blockers, evidence gaps, drift, long turns, and attribution warnings into operator actions.",
+      "where_to_look": "internal/metrics/attention.go, internal/cli/attention.go",
+      "why_it_may_help_other_tools": "Turns passive metrics into reviewable next actions suitable for closed-network operation."
+    },
+    {
+      "name": "handoff as a first-class artifact",
+      "description": "Handoff output summarizes current status, active turn anchors, open blockers, evidence gaps, latest evidence, and recommended next action.",
+      "where_to_look": "internal/cli/handoff.go",
+      "why_it_may_help_other_tools": "Improves context survival across compaction, restarts, and agent switching."
+    },
+    {
+      "name": "portable share packet",
+      "description": "Share output exports completed turns, active blockers, decisions, evidence counts, metric highlights, and requested review/help.",
+      "where_to_look": "internal/cli/share.go, internal/metrics/share.go",
+      "why_it_may_help_other_tools": "Provides team-readable status without requiring a dashboard or cloud account."
+    }
+  ],
+  "known_risks": [
+    "Hook/event ingest is not safe to add until storage, redaction, dropped-field, and retention policy is explicit.",
+    "Parallel subagent tracking currently depends on one global active turn unless lane/team tracking is added.",
+    "Pane-visible text is optimized for Korean terminal operation and should not be treated as a stable machine contract.",
+    "Generated runtime state can contain local project context and should remain gitignored."
+  ],
+  "requests_to_ai_tool_suite": [
+    "Treat ntts-flightlog as an agent-operation evidence source, not as an evaluation judge.",
+    "Prefer attention, share, handoff, and report JSON over scraping markdown worklogs.",
+    "Do not ingest raw .ntts-flightlog runtime output without an explicit operator opt-in and redaction policy.",
+    "Keep adapter certification blocked on stable event schema if hook/event ingest becomes the target."
+  ]
+}
