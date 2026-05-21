@@ -41,7 +41,7 @@ func RenderReport(data *WorklogData) string {
 	sb.WriteString("\n")
 
 	sb.WriteString(Bold + "결정 품질" + Reset + "\n")
-	fmt.Fprintf(&sb, "%saccepted %d · superseded %d · rejected %d · other %d%s\n",
+	fmt.Fprintf(&sb, "%s유효 %d · 대체됨 %d · 거절 %d · 기타 %d%s\n",
 		Dim, decisions.accepted, decisions.superseded, decisions.rejected, decisions.other, Reset)
 	fmt.Fprintf(&sb, "%s근거 연결 결정: %d/%d (%s)%s\n\n",
 		Dim, decisions.linked, decisions.total, percent(decisions.linked, decisions.total), Reset)
