@@ -25,6 +25,7 @@ ntts-flightlog share --format json --window week
 ntts-flightlog handoff --format json
 ntts-flightlog report --format json --window week
 ntts-flightlog agent-stats --format json --window week
+ntts-flightlog ingest --source codex --event test.finished < event.json
 ```
 
 All commands are closed-network by default. They read local `.ntts-flightlog/`
@@ -38,6 +39,7 @@ state and write to stdout. They require no API keys or hosted services.
 | Share JSON | `ntts-flightlog share --format json` | `share.v1` | Stable | Portable session/team status |
 | Handoff JSON | `ntts-flightlog handoff --format json` | `handoff.v1` | Stable | Continuation context |
 | Report JSON | `ntts-flightlog report --format json` | `report.v1` | Stable | Operational metrics summary |
+| Ingest JSON response | `ntts-flightlog ingest --source <agent> --event <name>` | `ingest.v0` | Beta | Redacted hook/event audit intake |
 | Golden attention fixture | `testdata/golden/attention_schema.json` | `attention.v1` | Stable | Adapter fixture and schema example |
 | Runtime state | `.ntts-flightlog/` | `runtime-state.v1` | Generated | SQLite, markdown, turn files, pane metadata |
 
@@ -127,13 +129,28 @@ Fields safe to rely on:
 - `metric_highlights[]`
 - `requested_review[]`
 
+## Beta: Ingest JSON Response
+
+`ingest` reads JSON from stdin and returns a bounded response. It never stores
+the raw payload by default.
+
+Fields safe to rely on during beta:
+
+- `ok`
+- `event_id`
+- `duplicate`
+- `promotion_status`
+- `promoted_entry_id`
+- `redaction_version`
+- `dropped_field_count`
+
 ## Experimental Fields
 
 Do not treat these as adapter-stable yet:
 
-- future `ingest` or hook/event fields
-- lane/team metadata before lane tracking lands
-- agent comparison/scorecard fields before lane attribution exists
+- additional hook/event fields beyond the `ingest.v0` response
+- lane/team metadata beyond current `lane.v1` fields
+- agent comparison/scorecard fields before lane and ingest coverage are proven
 - pane-rendered Korean text layout
 - raw `.ntts-flightlog/main.md` prose layout
 

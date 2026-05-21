@@ -63,14 +63,19 @@ agents can write to one worklog today, but parallel worker lanes still depend on
 one global active turn pointer. Until explicit lane tracking exists, agent
 comparison should remain conservative.
 
-Hook/event ingest is intentionally not shipped yet. Automated ingest is gated by
-`docs/storage-redaction-policy.md`, which defines:
+Hook/event ingest now ships as a bounded first slice. Automated ingest remains
+gated by `docs/storage-redaction-policy.md`, which defines:
 
 - stored fields
 - dropped fields
 - secret patterns
 - payload retention
 - operator-visible audit behavior
+
+The implemented `ntts-flightlog ingest` command reads one JSON object from
+stdin, redacts before persistence, stores only bounded `agent_events` audit
+fields, deduplicates by `dedupe_key`, and promotes test pass/fail or
+permission-denied events into reviewable evidence/blocker candidates.
 
 Pane-rendered text is optimized for Korean terminal scanability and should not
 be treated as a stable machine contract. Adapters should use JSON command output

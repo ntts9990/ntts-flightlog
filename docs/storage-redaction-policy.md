@@ -2,8 +2,7 @@
 
 Status date: 2026-05-21
 
-This policy is the prerequisite for any future automated hook/event ingest in
-`ntts-flightlog`.
+This policy gates automated hook/event ingest in `ntts-flightlog`.
 
 The product boundary remains:
 
@@ -53,10 +52,10 @@ Generated runtime path:
 
 This path may contain sensitive project context and must remain gitignored.
 
-## Future Hook/Event Storage Boundary
+## Hook/Event Storage Boundary
 
-Future `ntts-flightlog ingest` may add an `agent_events` table, but only with
-redacted, bounded fields.
+`ntts-flightlog ingest` writes an `agent_events` table with only redacted,
+bounded fields.
 
 Allowed fields:
 

@@ -68,6 +68,7 @@ func init() {
 		newDoctorCmd(),
 		newRefreshAnchorCmd(),
 		newDriftCheckCmd(),
+		newIngestCmd(),
 		newSelfUpgradeCmd(),
 	)
 }

@@ -155,6 +155,142 @@ func TestLaneTurnsKeepSeparateActivePointers(t *testing.T) {
 	}
 }
 
+func TestIngestCmd_RedactsAndPromotesTestPass(t *testing.T) {
+	dir := setupEnv(t)
+	execRunE(t, newTurnStartCmd(), false, "ingest turn")
+
+	cmd := newIngestCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetIn(strings.NewReader(`{
+	  "source": "codex",
+	  "event_name": "test.finished",
+	  "summary": "go test ./... OPENAI_API_KEY=sk-secret passed",
+	  "command": "go test ./...",
+	  "exit_code": 0,
+	  "stdout": "raw stdout must not be stored"
+	}`))
+	execRunE(t, cmd, false)
+
+	var resp map[string]any
+	if err := json.Unmarshal(out.Bytes(), &resp); err != nil {
+		t.Fatalf("decode ingest response: %v\n%s", err, out.String())
+	}
+	if resp["promotion_status"] != "promoted" || resp["duplicate"] != false {
+		t.Fatalf("response = %#v", resp)
+	}
+
+	store, err := db.Open(filepath.Join(dir, "flightlog.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer store.Close()
+
+	var summary string
+	var dropped int
+	if err := store.QueryRow(`SELECT summary, dropped_field_count FROM agent_events WHERE event_name = 'test.finished'`).Scan(&summary, &dropped); err != nil {
+		t.Fatalf("query agent_events: %v", err)
+	}
+	if strings.Contains(summary, "sk-secret") || strings.Contains(summary, "raw stdout") {
+		t.Fatalf("agent event leaked raw payload: %q", summary)
+	}
+	if dropped != 1 {
+		t.Fatalf("dropped_field_count = %d, want 1", dropped)
+	}
+	var evidenceCount int
+	if err := store.QueryRow(`SELECT COUNT(*) FROM entries WHERE kind = 'evidence' AND title LIKE 'Hook evidence candidate:%'`).Scan(&evidenceCount); err != nil {
+		t.Fatalf("query evidence entries: %v", err)
+	}
+	if evidenceCount != 1 {
+		t.Fatalf("evidenceCount = %d, want 1", evidenceCount)
+	}
+}
+
+func TestIngestCmd_PromotesTestFailureToBlocker(t *testing.T) {
+	dir := setupEnv(t)
+	cmd := newIngestCmd()
+	cmd.SetIn(strings.NewReader(`{
+	  "source": "codex",
+	  "event_name": "test.finished",
+	  "summary": "go test ./internal/db failed",
+	  "exit_code": 1,
+	  "dedupe_key": "failed-test-1"
+	}`))
+	execRunE(t, cmd, false)
+
+	store, err := db.Open(filepath.Join(dir, "flightlog.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer store.Close()
+
+	var blockerCount int
+	if err := store.QueryRow(`SELECT COUNT(*) FROM blockers b JOIN entries e ON e.id = b.entry_id WHERE e.title LIKE 'Hook blocker candidate:%'`).Scan(&blockerCount); err != nil {
+		t.Fatalf("query blockers: %v", err)
+	}
+	if blockerCount != 1 {
+		t.Fatalf("blockerCount = %d, want 1", blockerCount)
+	}
+}
+
+func TestIngestCmd_DeduplicatesEvents(t *testing.T) {
+	dir := setupEnv(t)
+	raw := `{
+	  "source": "codex",
+	  "event_name": "test.finished",
+	  "summary": "go test ./... passed",
+	  "exit_code": 0,
+	  "dedupe_key": "same-event"
+	}`
+	first := newIngestCmd()
+	first.SetIn(strings.NewReader(raw))
+	execRunE(t, first, false)
+
+	second := newIngestCmd()
+	var out bytes.Buffer
+	second.SetOut(&out)
+	second.SetIn(strings.NewReader(raw))
+	execRunE(t, second, false)
+
+	var resp map[string]any
+	if err := json.Unmarshal(out.Bytes(), &resp); err != nil {
+		t.Fatalf("decode duplicate response: %v", err)
+	}
+	if resp["duplicate"] != true || resp["promotion_status"] != "duplicate" {
+		t.Fatalf("duplicate response = %#v", resp)
+	}
+
+	store, err := db.Open(filepath.Join(dir, "flightlog.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer store.Close()
+
+	var eventCount, evidenceCount int
+	if err := store.QueryRow(`SELECT COUNT(*) FROM agent_events`).Scan(&eventCount); err != nil {
+		t.Fatalf("query events: %v", err)
+	}
+	if err := store.QueryRow(`SELECT COUNT(*) FROM entries WHERE title LIKE 'Hook evidence candidate:%'`).Scan(&evidenceCount); err != nil {
+		t.Fatalf("query entries: %v", err)
+	}
+	if eventCount != 1 || evidenceCount != 1 {
+		t.Fatalf("counts event=%d evidence=%d, want 1/1", eventCount, evidenceCount)
+	}
+}
+
+func TestIngestCmd_InvalidJSONDoesNotLeakPayload(t *testing.T) {
+	setupEnv(t)
+	cmd := newIngestCmd()
+	cmd.SetIn(strings.NewReader(`{"event_name":"test.finished","summary":"OPENAI_API_KEY=sk-secret"`))
+	err := execRunE(t, cmd, true)
+	if err == nil {
+		t.Fatal("expected invalid JSON error")
+	}
+	if strings.Contains(err.Error(), "sk-secret") || strings.Contains(err.Error(), "OPENAI_API_KEY") {
+		t.Fatalf("invalid JSON error leaked payload: %v", err)
+	}
+}
+
 // TestReportCmd_Text runs report --format text on an empty DB.
 func TestReportCmd_Text(t *testing.T) {
 	setupEnv(t)

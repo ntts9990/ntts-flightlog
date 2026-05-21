@@ -2,8 +2,8 @@
   "project_id": "ntts-flightlog",
   "project_name": "NTTS Flightlog",
   "source_path": "/Users/sungyub/Documents/Projects/ntts-flightlog",
-  "source_commit": "3ec2530f1dff627382a8b64ac0edae4fd7c4ebac",
-  "updated_at": "2026-05-21T04:45:00Z",
+  "source_commit": "6ae9a79b76ebd2628c8bbc5a36d3eae72c3819f9",
+  "updated_at": "2026-05-21T04:54:15Z",
   "classification": "trusted-runtime",
   "development_status": {
     "summary": "Local-first Go CLI and tmux sidecar for long-running AI coding sessions. It records turns, entries, decisions, evidence, blockers, handoffs, attention items, share packets, report metrics, and agent attribution into repo-local SQLite while mirroring a readable markdown worklog.",
@@ -11,18 +11,18 @@
       "Added attention command and report-view attention surfacing for stale blockers, evidence gaps, drift, long turns, and agent attribution warnings.",
       "Added share command for portable Markdown or JSON team status packets.",
       "Made handoff a first-class continuation artifact for compaction, restart, agent switching, and reviewer context.",
-      "Added storage and redaction policy as the gate for future hook/event ingest.",
+      "Added storage and redaction policy as the gate for hook/event ingest.",
       "Added the first lane/team tracking slice with --lane, lane-specific active turn pointers, and parent_turn_id.",
+      "Added bounded ingest with redacted agent_events audit records, dedupe, and evidence/blocker candidate promotion.",
       "Clarified product boundary around a local-first terminal sidecar instead of a cloud dashboard, raw transcript archive, or agent runner."
     ],
     "active_work": [
-      "Use the storage/redaction policy as the prerequisite for any future automated hook/event ingest.",
-      "Harden lane/team tracking in report, handoff, share, and future ingest surfaces.",
+      "Use the storage/redaction policy as the boundary for hook starter kits and any future ingest expansion.",
+      "Harden lane/team tracking in report, handoff, share, and ingest-adjacent surfaces.",
       "Preserve local-only operation and Korean-first pane output while adding more structured machine-readable surfaces."
     ],
     "next_priorities": [
-      "Add bounded ingest command for redacted hook events and reviewable evidence/blocker candidates.",
-      "Add hook starter kits only after redaction and retention rules are documented.",
+      "Add hook starter kits that emit bounded JSON into ntts-flightlog ingest.",
       "Add evidence-check or evidence-report wrappers over Phase E evidence workflows."
     ]
   },
@@ -78,6 +78,16 @@
       "notes": "Lane-aware write commands keep separate active turn pointers for parallel workers while preserving the default single-lane workflow."
     },
     {
+      "kind": "cli",
+      "name": "ingest",
+      "command_or_path": "ntts-flightlog ingest --source codex --event test.finished < event.json",
+      "schema_version": "ingest.v0",
+      "network_posture": "offline",
+      "required_secrets": [],
+      "stability": "beta",
+      "notes": "Redacted hook/event intake that stores bounded audit fields and promotes test evidence/blocker candidates."
+    },
+    {
       "kind": "json-artifact",
       "name": "attention schema fixture",
       "command_or_path": "testdata/golden/attention_schema.json",
@@ -130,7 +140,8 @@
       "Ingest attention JSON as operator-risk evidence.",
       "Ingest share JSON as a session-status evidence artifact.",
       "Ingest handoff JSON as a continuation and context-survival artifact.",
-      "Use report JSON metrics for closed-network operational health summaries."
+      "Use report JSON metrics for closed-network operational health summaries.",
+      "Use ingest JSON responses as beta evidence that hook events were redacted, deduped, and stored without raw payload retention."
     ],
     "fields_safe_to_rely_on": [
       "attention.summary",
@@ -146,17 +157,29 @@
       "handoff.status",
       "handoff.open_blockers",
       "handoff.decisions_needing_evidence",
-      "report.window"
+      "report.window",
+      "ingest.ok",
+      "ingest.event_id",
+      "ingest.duplicate",
+      "ingest.promotion_status",
+      "ingest.redaction_version",
+      "ingest.dropped_field_count"
     ],
     "fields_experimental": [
-      "agent attribution rates until lane/team tracking lands",
-      "future hook/event ingest fields",
+      "agent attribution rates until lane/team and ingest coverage are proven",
+      "additional hook/event fields beyond ingest.v0",
       "future lane/team metadata fields beyond lane and parent_turn_id",
       "optional redacted hook payload retention controls",
       "pane-rendered text layout"
     ]
   },
   "reusable_patterns": [
+    {
+      "name": "redacted hook/event intake",
+      "description": "Ingest reads one JSON event from stdin, redacts before persistence, stores bounded audit fields, deduplicates, and promotes test pass/fail signals into evidence/blocker candidates.",
+      "where_to_look": "internal/cli/ingest.go, internal/agent/events.go, internal/db/migrations/0009_agent_events.sql",
+      "why_it_may_help_other_tools": "Lets agents emit useful operational events without turning the worklog into a raw transcript or secret sink."
+    },
     {
       "name": "turn-bounded task lifecycle",
       "description": "A turn captures intent, constraints, done-when, entries, outcome, evidence, blockers, and elapsed time as the primary work unit.",
@@ -183,8 +206,8 @@
     }
   ],
   "known_risks": [
-    "Hook/event ingest must follow docs/storage-redaction-policy.md and must not store unredacted payloads by default.",
-    "Lane/team tracking has a first slice, but richer agent comparison should wait for more lane-aware reporting and ingest coverage.",
+    "Future hook starter kits must keep following docs/storage-redaction-policy.md and must not store unredacted payloads by default.",
+    "Lane/team tracking and ingest have first slices, but richer agent comparison should wait for more coverage.",
     "Pane-visible text is optimized for Korean terminal operation and should not be treated as a stable machine contract.",
     "Generated runtime state can contain local project context and should remain gitignored."
   ],
@@ -192,6 +215,6 @@
     "Treat ntts-flightlog as an agent-operation evidence source, not as an evaluation judge.",
     "Prefer attention, share, handoff, and report JSON over scraping markdown worklogs.",
     "Do not ingest raw .ntts-flightlog runtime output without an explicit operator opt-in and redaction policy.",
-    "Keep adapter certification blocked on stable event schema if hook/event ingest becomes the target."
+    "Treat ingest.v0 as beta until hook starter kits and retention controls are exercised across agents."
   ]
 }

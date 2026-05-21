@@ -8,6 +8,7 @@ const (
 	TableTurns                 = "turns"
 	TableEntries               = "entries"
 	TableBlockers              = "blockers"
+	TableAgentEvents           = "agent_events"
 	TableDecisionEvidenceLinks = "decision_evidence_links"
 	TableDecisionStatus        = "decision_status"
 	TableSchemaMigrations      = "_schema_migrations"

@@ -108,6 +108,7 @@ ntts-flightlog decision <title> [detail]
 ntts-flightlog evidence <title> [detail] [--link decision-id-or-title]
 ntts-flightlog blocker <title> [detail]
 ntts-flightlog blocker-resolve <id-or-title> [resolution]
+ntts-flightlog ingest --source <agent> --event <name> < event.json
 ntts-flightlog handoff [--format text|md|json]
 ntts-flightlog attention [--format text|json] [--window day|week|all] [--agent name]
 ntts-flightlog share [--format md|json] [--window day|week|all]
@@ -126,6 +127,11 @@ ntts-flightlog self-upgrade
 Use `--lane <name>` on write commands when multiple subagents or team workers
 are logging in parallel. Each lane keeps its own active turn pointer so
 `worker-a` can end its current turn without closing `worker-b`'s turn.
+
+`ingest` reads one hook/event JSON object from stdin, redacts it before storage,
+stores only bounded audit fields in `agent_events`, deduplicates by
+`dedupe_key`, and promotes test-pass/test-fail events into reviewable
+evidence/blocker candidates.
 
 ## Metrics
 

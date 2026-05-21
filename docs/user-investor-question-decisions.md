@@ -237,7 +237,32 @@ Do not attach yet:
 - automatic config mutation by default
 - hidden global startup behavior
 
-### 4. Evidence Automation
+### 4. Hook/Event Ingest
+
+Decision: ATTACHED AS FIRST SLICE.
+
+Reason: hook events are useful only if they stay local, bounded, and redacted.
+The first implementation stores compact audit records and promotes obvious
+test/evidence or blocker candidates without saving raw payloads.
+
+Attached:
+
+- `ntts-flightlog ingest --source codex|claude|gemini|generic --event <name>`
+- JSON stdin
+- `agent_events` audit table
+- redaction before persistence
+- dedupe by `dedupe_key`
+- test-pass evidence candidate promotion
+- test-fail and permission-denied blocker candidate promotion
+
+Still not attached:
+
+- automatic hook installation
+- raw payload retention
+- all-tool-call replay
+- silent final decisions from hook events
+
+### 5. Evidence Automation
 
 Decision: NEXT.
 

@@ -97,6 +97,7 @@ If the CLI is not on PATH, call the skill script directly. It will delegate to `
 - `decision <title> [detail]`: append a decision record (mirrored).
 - `evidence <title> [detail]`: append verification evidence (mirrored).
 - `blocker <title> [detail]`: append a blocker (mirrored).
+- `ingest --source <agent> --event <name> < event.json`: store a redacted hook/event audit record and promote test pass/fail events into reviewable evidence/blocker candidates.
 - `attention [--window day|week|all] [--format text|json]`: print stale blockers, decisions missing evidence, drift, long turns, and agent attribution warnings as recommended actions.
 - `handoff [--format text|md|json]`: print a pasteable session handoff with status, active turn anchors, open blockers, decisions missing evidence, latest evidence, and a recommended next action.
 - `share [--window day|week|all] [--format md|json]`: print a PR/issue/email-ready team status report with completed turns, blockers, decisions/evidence, metric highlights, and requested help.
@@ -109,6 +110,7 @@ If the CLI is not on PATH, call the skill script directly. It will delegate to `
 - `ntts-flightlog attention [--format text|json]` — action queue for what needs operator attention before continuing.
 - `ntts-flightlog handoff [--format text|md|json]` — compact summary to paste into a new agent/session before continuing work.
 - `ntts-flightlog share --window week --format md` — portable status report for PRs, issues, email, or Phase E team-share evidence.
+- `ntts-flightlog ingest --source codex --event test.finished < event.json` — redacted, bounded hook/event intake for evidence/blocker candidate creation.
 - `ntts-flightlog doctor` — local preflight for binary path/version, DB migrations, pane liveness, and installed skill wrapper delegation.
 - Inside the pane, press `1`–`5` to switch views, `r` to reload, `q` to quit. Click a turn title with cmd/ctrl held to open the per-turn file (terminal must support OSC 8 hyperlinks).
 

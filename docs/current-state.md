@@ -27,14 +27,16 @@ Current implementation status:
 
 - The Go CLI and tmux sidecar are substantially implemented.
 - Core state objects exist: sessions, turns, entries, decisions, evidence,
-  blockers, metrics, agent attribution, and turn anchors.
-- The current worktree contains uncommitted product work that adds `attention`,
-  `share`, and report-view attention surfacing.
+  blockers, metrics, agent attribution, turn anchors, lane ownership, and
+  redacted agent event audit records.
+- Latest product work adds bounded hook/event ingest with redaction,
+  deduplication, and reviewable evidence/blocker candidate promotion.
 - Product direction has been clarified around the local-first terminal sidecar
   wedge.
 - The next implementation sequence is bounded hook/event ingest, hook starter
   kits, evidence automation, and then richer agent comparison. Storage/redaction
-  policy and the first lane/team tracking slice are now implemented.
+  policy, the first lane/team tracking slice, and bounded ingest are now
+  implemented.
 
 ## 2. Developer Goal
 
@@ -186,6 +188,7 @@ Current user-facing commands include:
 - `handoff`
 - `attention`
 - `share`
+- `ingest`
 - `report`
 - `agent-stats`
 - `doctor`
@@ -296,10 +299,11 @@ OMX plans and execution context:
 
 ## 7. Event And Ownership Contract Status
 
-The product does not yet implement generic hook/event ingest. That is a planned
-NEXT item, not an attached surface.
+The product now implements the first bounded generic hook/event ingest slice.
+It is an intentionally narrow audit surface, not a raw tool-call archive.
 
-Current event-like state is stored through explicit CLI commands:
+Current event-like state is stored through explicit CLI commands plus redacted
+ingest:
 
 - entries
 - decisions
@@ -309,15 +313,17 @@ Current event-like state is stored through explicit CLI commands:
 - mode/status
 - agent attribution
 - anchors and drift alerts
+- `agent_events` audit records
 
-Planned ingest contract:
+Implemented ingest contract:
 
 - `ntts-flightlog ingest --source codex|claude|gemini|generic --event <name>`
 - JSON stdin support
 - `agent_events` table
 - event dedupe
 - redaction before storage
-- promotion rules that create reviewable evidence/blocker candidates
+- promotion rules that create reviewable evidence/blocker candidates for test
+  pass/fail and permission-denied signals
 
 Important ownership rule:
 
@@ -327,7 +333,7 @@ Important ownership rule:
 - Raw event streams must stay hidden by default unless promoted into useful
   operator state.
 - Product code should not add hook starter kits or automatic config mutation
-  before the storage/redaction contract exists.
+  before those starter kits can target the redacted ingest surface.
 
 ## 8. Implementation Roadmap
 
@@ -335,10 +341,10 @@ Current roadmap from `docs/user-investor-question-decisions.md`:
 
 ```text
 done:
-  handoff -> attention -> share -> storage/redaction policy -> first lane tracking slice
+  handoff -> attention -> share -> storage/redaction policy -> first lane tracking slice -> bounded ingest
 
 next:
-  ingest -> hooks -> evidence automation -> richer agent comparison
+  hook starter kits -> evidence automation -> richer agent comparison
 
 later:
   richer agent comparison
@@ -353,14 +359,13 @@ not now:
 
 Immediate product sequence:
 
-1. Finalize and commit the current attention/share/product-scope work.
+1. Commit and publish the bounded ingest slice.
 2. Use `docs/storage-redaction-policy.md` as the safety boundary for future
-   automated ingest.
+   hook starter kits and any expansion of ingest payload fields.
 3. Extend lane/team tracking only where richer parallel ownership is needed.
-4. Implement bounded hook/event ingest.
-5. Add hook starter kits as opt-in printed snippets and diagnostics.
-6. Add evidence automation wrappers.
-7. Extend agent comparison after lane data is trustworthy.
+4. Add hook starter kits as opt-in printed snippets and diagnostics.
+5. Add evidence automation wrappers.
+6. Extend agent comparison after lane and ingest data are trustworthy.
 
 ## 9. Ultragoal And OMX State
 
