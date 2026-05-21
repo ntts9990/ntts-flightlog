@@ -2,8 +2,8 @@
   "project_id": "ntts-flightlog",
   "project_name": "NTTS Flightlog",
   "source_path": "/Users/sungyub/Documents/Projects/ntts-flightlog",
-  "source_commit": "6ae9a79b76ebd2628c8bbc5a36d3eae72c3819f9",
-  "updated_at": "2026-05-21T04:54:15Z",
+  "source_commit": "e46669cbd5d03fcb95f47210f3031a13a5f9416b",
+  "updated_at": "2026-05-21T05:11:58Z",
   "classification": "trusted-runtime",
   "development_status": {
     "summary": "Local-first Go CLI and tmux sidecar for long-running AI coding sessions. It records turns, entries, decisions, evidence, blockers, handoffs, attention items, share packets, report metrics, and agent attribution into repo-local SQLite while mirroring a readable markdown worklog.",
@@ -14,10 +14,12 @@
       "Added storage and redaction policy as the gate for hook/event ingest.",
       "Added the first lane/team tracking slice with --lane, lane-specific active turn pointers, and parent_turn_id.",
       "Added bounded ingest with redacted agent_events audit records, dedupe, and evidence/blocker candidate promotion.",
+      "Added an LLM prompting policy gate for any future product code that calls models.",
       "Clarified product boundary around a local-first terminal sidecar instead of a cloud dashboard, raw transcript archive, or agent runner."
     ],
     "active_work": [
       "Use the storage/redaction policy as the boundary for hook starter kits and any future ingest expansion.",
+      "Keep future LLM-backed behavior blocked until prompt contracts, structured outputs, evals, and prompt-injection fixtures exist.",
       "Harden lane/team tracking in report, handoff, share, and ingest-adjacent surfaces.",
       "Preserve local-only operation and Korean-first pane output while adding more structured machine-readable surfaces."
     ],
@@ -207,6 +209,7 @@
   ],
   "known_risks": [
     "Future hook starter kits must keep following docs/storage-redaction-policy.md and must not store unredacted payloads by default.",
+    "Future LLM-backed product code must follow docs/llm-prompting-policy.md instead of embedding ad hoc prompts.",
     "Lane/team tracking and ingest have first slices, but richer agent comparison should wait for more coverage.",
     "Pane-visible text is optimized for Korean terminal operation and should not be treated as a stable machine contract.",
     "Generated runtime state can contain local project context and should remain gitignored."

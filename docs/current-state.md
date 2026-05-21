@@ -66,12 +66,17 @@ Important constraints:
   done-when, entries, outcome, evidence, blockers, and elapsed time.
 - No cloud dashboard, no raw transcript archive, no PR automation, no broad
   personal memory, and no all-tool-call replay in the current product boundary.
+- No runtime LLM calls currently exist in the product. If future product code
+  adds LLM behavior, `docs/llm-prompting-policy.md` is the gating policy for
+  prompt contracts, structured outputs, evals, redaction, and prompt-injection
+  handling.
 
 ## 3. Product Direction
 
 Primary product direction source:
 
 - `docs/product-direction.md`
+- `docs/llm-prompting-policy.md`
 
 Product decision record:
 

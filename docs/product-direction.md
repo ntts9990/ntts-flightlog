@@ -66,6 +66,9 @@ work-management object.
 - Do not surface raw tool-call volume unless it directly improves orientation.
 - Prefer compact status objects over prose-heavy logs in the side pane.
 - Keep Korean pane-visible content by default.
+- Do not add LLM-backed product behavior without a prompt contract, structured
+  output schema, eval fixtures, and redaction/injection handling under
+  `docs/llm-prompting-policy.md`.
 
 ## Product Decision Records
 

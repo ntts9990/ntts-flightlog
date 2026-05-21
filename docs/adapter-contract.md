@@ -15,6 +15,9 @@ happened locally.
 It is not an evaluation judge, hosted telemetry service, PR automation agent, or
 raw tool-call archive.
 
+It also does not currently expose a runtime LLM surface. Any future LLM-backed
+adapter behavior must first satisfy `docs/llm-prompting-policy.md`.
+
 ## Stable Commands
 
 Run commands from the repository whose work is being logged.
