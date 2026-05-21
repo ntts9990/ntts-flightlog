@@ -132,6 +132,71 @@ func TestReportCmd_DayWindow(t *testing.T) {
 	execRunE(t, cmd, false)
 }
 
+func TestAttentionCmd_Text(t *testing.T) {
+	setupEnv(t)
+	seedHandoffFixture(t)
+
+	cmd := newAttentionCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	execRunE(t, cmd, false)
+
+	got := out.String()
+	for _, want := range []string{"NTTS Flightlog attention", "주의 필요", "근거 없는 결정 유지", "다음:"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("attention text missing %q in:\n%s", want, got)
+		}
+	}
+}
+
+func TestAttentionCmd_JSON(t *testing.T) {
+	setupEnv(t)
+	seedHandoffFixture(t)
+
+	cmd := newAttentionCmd()
+	if err := cmd.Flags().Set("format", "json"); err != nil {
+		t.Fatalf("set format: %v", err)
+	}
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	execRunE(t, cmd, false)
+
+	var got struct {
+		Summary struct {
+			Total int `json:"total"`
+		} `json:"summary"`
+		Items []struct {
+			SourceType        string `json:"source_type"`
+			Reason            string `json:"reason"`
+			RecommendedAction string `json:"recommended_action"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("attention json parse: %v\n%s", err, out.String())
+	}
+	if got.Summary.Total == 0 || len(got.Items) == 0 {
+		t.Fatalf("attention json should contain items: %#v", got)
+	}
+	if got.Items[0].SourceType == "" || got.Items[0].Reason == "" || got.Items[0].RecommendedAction == "" {
+		t.Fatalf("attention item missing required fields: %#v", got.Items[0])
+	}
+}
+
+func TestAttentionCmd_BadFlags(t *testing.T) {
+	setupEnv(t)
+	cmd := newAttentionCmd()
+	if err := cmd.Flags().Set("format", "xml"); err != nil {
+		t.Fatalf("set format: %v", err)
+	}
+	execRunE(t, cmd, true)
+
+	cmd = newAttentionCmd()
+	if err := cmd.Flags().Set("window", "month"); err != nil {
+		t.Fatalf("set window: %v", err)
+	}
+	execRunE(t, cmd, true)
+}
+
 func TestHandoffCmd_Text(t *testing.T) {
 	setupEnv(t)
 	seedHandoffFixture(t)
@@ -245,6 +310,86 @@ func TestHandoffCmd_CurrentSessionOnly(t *testing.T) {
 	if !strings.Contains(got, "new active decision") {
 		t.Fatalf("handoff missing current session decision:\n%s", got)
 	}
+}
+
+func TestShareCmd_Markdown(t *testing.T) {
+	setupEnv(t)
+	seedHandoffFixture(t)
+	if err := newTurnEndCmd().RunE(newTurnEndCmd(), []string{"handoff 검증 완료"}); err != nil {
+		t.Fatalf("turn-end: %v", err)
+	}
+
+	cmd := newShareCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	execRunE(t, cmd, false)
+
+	got := out.String()
+	for _, want := range []string{
+		"NTTS Flightlog Share",
+		"Summary / 요약",
+		"Completed Turns / 완료 턴",
+		"handoff 턴",
+		"Active Blockers / 열린 블로커",
+		"대기 중인 외부 확인",
+		"Decisions And Evidence / 결정과 근거",
+		"Metric Highlights / 메트릭 하이라이트",
+		"Requested Review/Help / 요청 사항",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("share markdown missing %q in:\n%s", want, got)
+		}
+	}
+}
+
+func TestShareCmd_JSON(t *testing.T) {
+	setupEnv(t)
+	seedHandoffFixture(t)
+
+	cmd := newShareCmd()
+	if err := cmd.Flags().Set("format", "json"); err != nil {
+		t.Fatalf("set format: %v", err)
+	}
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	execRunE(t, cmd, false)
+
+	var got struct {
+		Summary struct {
+			Turns int `json:"turns"`
+		} `json:"summary"`
+		ActiveBlockers   []shareBlocker      `json:"active_blockers"`
+		Decisions        []shareDecision     `json:"decisions"`
+		MetricHighlights []map[string]string `json:"metric_highlights"`
+		RequestedReview  []shareReviewItem   `json:"requested_review"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("share json parse: %v\n%s", err, out.String())
+	}
+	if got.Summary.Turns == 0 {
+		t.Fatalf("share json summary missing turns: %#v", got.Summary)
+	}
+	if len(got.ActiveBlockers) == 0 || len(got.Decisions) == 0 || len(got.MetricHighlights) == 0 {
+		t.Fatalf("share json missing sections: %#v", got)
+	}
+	if len(got.RequestedReview) == 0 {
+		t.Fatalf("share json should include attention-backed review requests: %#v", got)
+	}
+}
+
+func TestShareCmd_BadFlags(t *testing.T) {
+	setupEnv(t)
+	cmd := newShareCmd()
+	if err := cmd.Flags().Set("format", "text"); err != nil {
+		t.Fatalf("set format: %v", err)
+	}
+	execRunE(t, cmd, true)
+
+	cmd = newShareCmd()
+	if err := cmd.Flags().Set("window", "month"); err != nil {
+		t.Fatalf("set window: %v", err)
+	}
+	execRunE(t, cmd, true)
 }
 
 func seedHandoffFixture(t *testing.T) {

@@ -3,6 +3,8 @@ package views
 import (
 	"fmt"
 	"strings"
+
+	"github.com/ntts9990/ntts-flightlog/internal/metrics"
 )
 
 // RenderReport returns the report view content.
@@ -33,6 +35,8 @@ func RenderReport(data *WorklogData) string {
 	fmt.Fprintf(&sb, "%s  entry %d · decision %d · evidence %d · blocker %d%s\n\n",
 		Dim, entryCounts["entry"], entryCounts["decision"], entryCounts["evidence"], entryCounts["blocker"], Reset)
 
+	writeAttentionSection(&sb, data.Attention)
+
 	sb.WriteString(Bold + "턴 진행" + Reset + "\n")
 	fmt.Fprintf(&sb, "%s완료 턴: %d · 진행 중: %d · 기타: %d%s\n", Dim, turns.completed, turns.active, turns.other, Reset)
 	if turns.completedWithDuration > 0 {
@@ -54,6 +58,39 @@ func RenderReport(data *WorklogData) string {
 	}
 
 	return sb.String()
+}
+
+func writeAttentionSection(sb *strings.Builder, items []metrics.AttentionItem) {
+	sb.WriteString(Bold + "주의 필요" + Reset + "\n")
+	if len(items) == 0 {
+		fmt.Fprintf(sb, "%s현재 주의가 필요한 항목 없음%s\n\n", Dim, Reset)
+		return
+	}
+	limit := len(items)
+	if limit > 5 {
+		limit = 5
+	}
+	for i := 0; i < limit; i++ {
+		item := items[i]
+		fmt.Fprintf(sb, "%s[%s] %s%s\n", ColorBlocker, reportSeverityLabel(item.Severity), item.Title, Reset)
+		fmt.Fprintf(sb, "%s  이유: %s%s\n", Dim, item.Reason, Reset)
+		fmt.Fprintf(sb, "%s  다음: %s%s\n", Dim, item.RecommendedAction, Reset)
+	}
+	if hidden := len(items) - limit; hidden > 0 {
+		fmt.Fprintf(sb, "%s  외 %d개%s\n", Dim, hidden, Reset)
+	}
+	sb.WriteString("\n")
+}
+
+func reportSeverityLabel(severity string) string {
+	switch severity {
+	case metrics.AttentionSeverityHigh:
+		return "높음"
+	case metrics.AttentionSeverityMedium:
+		return "중간"
+	default:
+		return "낮음"
+	}
 }
 
 func formatCount(label string, n int) string {

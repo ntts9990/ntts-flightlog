@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/ntts9990/ntts-flightlog/internal/db"
+	"github.com/ntts9990/ntts-flightlog/internal/metrics"
 )
 
 // Session represents a work session row from the sessions table.
@@ -85,6 +86,7 @@ type WorklogData struct {
 	Blockers              []Blocker
 	DecisionEvidenceLinks []DecisionEvidenceLink
 	DecisionStates        []DecisionState
+	Attention             []metrics.AttentionItem
 }
 
 // LoadAll queries all worklog data from SQLite in display order.
@@ -113,6 +115,10 @@ func LoadAll(d *db.DB) (*WorklogData, error) {
 	if err != nil {
 		return nil, fmt.Errorf("tui: load decision states: %w", err)
 	}
+	attention, err := metrics.QueryAttention(d, metrics.Filter{Window: "all"}, metrics.AttentionOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("tui: load attention: %w", err)
+	}
 	return &WorklogData{
 		Sessions:              sessions,
 		Turns:                 turns,
@@ -120,6 +126,7 @@ func LoadAll(d *db.DB) (*WorklogData, error) {
 		Blockers:              blockers,
 		DecisionEvidenceLinks: links,
 		DecisionStates:        decisionStates,
+		Attention:             attention.Items,
 	}, nil
 }
 

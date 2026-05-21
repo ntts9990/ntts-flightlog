@@ -22,6 +22,17 @@ Use these source artifacts:
 - Adversarial review: `.omc/specs/v2-adversarial-review.md`
 - Final summary: `docs/v2-ga-acceptance-evidence.md`
 
+For the team-share source, generate the operational baseline from the CLI:
+
+```bash
+ntts-flightlog share --window week --format md
+```
+
+Paste the generated completed turns, active blockers, decisions/evidence,
+metric highlights, and requested review/help into
+`.omc/specs/v2-team-share-report.md`, then add the dated external
+acknowledgement.
+
 Each persona must cite at least four of the five metrics with concrete values and interpretation:
 
 - `turn_duration`

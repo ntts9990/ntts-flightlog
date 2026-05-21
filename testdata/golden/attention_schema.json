@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Frozen JSON schema for `flightlog attention --format json`.",
+  "type": "object",
+  "required": ["window", "agent", "generated_at", "summary", "items"],
+  "properties": {
+    "window": { "type": "string" },
+    "agent": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "summary": {
+      "type": "object",
+      "required": ["total", "high", "medium", "low"],
+      "properties": {
+        "total": { "type": "integer" },
+        "high": { "type": "integer" },
+        "medium": { "type": "integer" },
+        "low": { "type": "integer" }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "severity",
+          "rule",
+          "source_type",
+          "source_id",
+          "title",
+          "reason",
+          "recommended_action"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "severity": { "type": "string" },
+          "rule": { "type": "string" },
+          "source_type": { "type": "string" },
+          "source_id": { "type": "string" },
+          "title": { "type": "string" },
+          "reason": { "type": "string" },
+          "recommended_action": { "type": "string" },
+          "age_seconds": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

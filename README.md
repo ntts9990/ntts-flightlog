@@ -108,6 +108,8 @@ ntts-flightlog evidence <title> [detail] [--link decision-id-or-title]
 ntts-flightlog blocker <title> [detail]
 ntts-flightlog blocker-resolve <id-or-title> [resolution]
 ntts-flightlog handoff [--format text|md|json]
+ntts-flightlog attention [--format text|json] [--window day|week|all] [--agent name]
+ntts-flightlog share [--format md|json] [--window day|week|all]
 ntts-flightlog report [--format text|json] [--window day|week|all] [--agent name]
 ntts-flightlog agent-stats [--format text|json] [--window day|week|all] [--agent name]
 ntts-flightlog doctor
@@ -132,6 +134,11 @@ ntts-flightlog self-upgrade
 
 Use `ntts-flightlog agent-stats` to inspect Phase E agent attribution health, including `auto_detect_correct_rate`, `auto_detect_unknown_rate`, `auto_detect_mismatch_rate`, and `override_rate`.
 
+Use `ntts-flightlog attention` to turn metric and state signals into operator
+actions: stale blockers, decisions without evidence, active turns without
+evidence, drift alerts, long turns without outcomes, and agent attribution
+warnings. Add `--format json` for a stable machine-readable schema.
+
 ## Views and clickable turns
 
 Each `turn-start` creates `.ntts-flightlog/turns/turn-{N}.md` and mirrors every subsequent `entry`/`decision`/`evidence`/`blocker`/`turn-end` into it. That gives every main task its own scannable history alongside the flat main log.
@@ -147,7 +154,7 @@ Inside the tmux pane, the top bar is a 2-line menu — press `1`–`5` to switch
 - `2` turns — compact turn index with status, elapsed time, signal counts, and the latest result.
 - `3` decisions — ADR-lite decision log with turn context and linked/same-turn evidence counts.
 - `4` blockers — open-risk board with open blockers first and resolved blockers below.
-- `5` report — operational summary of work volume, turn progress, decision evidence coverage, and blocker state.
+- `5` report — operational summary of work volume, attention items, turn progress, decision evidence coverage, and blocker state.
 
 `evidence --link` accepts either a decision entry ID or a unique decision title
 fragment. Ambiguous matches fail instead of guessing. `blocker-resolve` accepts a
@@ -158,6 +165,11 @@ Use `ntts-flightlog handoff` before switching agents or restarting a session. It
 prints a compact handoff packet with current status, active turn anchors, open
 blockers, decisions that still need evidence, latest evidence, and a recommended
 next action.
+
+Use `ntts-flightlog share --window week --format md` when the status needs to
+leave the pane for a PR, issue, email, or Phase E team-share artifact. It
+includes completed turns, active blockers, decisions/evidence, metric
+highlights, and requested review/help.
 
 Turn-start titles in the pane are OSC 8 hyperlinks. cmd/ctrl-click in iTerm2, WezTerm, Kitty, Ghostty, or the VS Code integrated terminal opens the corresponding `turn-{N}.md` in your default editor. Outside the pane, use `ntts-flightlog turn-path N` to get the path directly.
 

@@ -89,14 +89,18 @@ If the CLI is not on PATH, call the skill script directly. It will delegate to `
 - `decision <title> [detail]`: append a decision record (mirrored).
 - `evidence <title> [detail]`: append verification evidence (mirrored).
 - `blocker <title> [detail]`: append a blocker (mirrored).
+- `attention [--window day|week|all] [--format text|json]`: print stale blockers, decisions missing evidence, drift, long turns, and agent attribution warnings as recommended actions.
 - `handoff [--format text|md|json]`: print a pasteable session handoff with status, active turn anchors, open blockers, decisions missing evidence, latest evidence, and a recommended next action.
+- `share [--window day|week|all] [--format md|json]`: print a PR/issue/email-ready team status report with completed turns, blockers, decisions/evidence, metric highlights, and requested help.
 
 ## Viewing
 
 - `ntts-flightlog path` — absolute path of the main worklog file.
 - `ntts-flightlog turn-path [N]` — absolute path of turn N (or the most recent turn). Useful in scripts: `code "$(ntts-flightlog turn-path 3)"`.
 - `ntts-flightlog view <flat|turns|decisions|blockers|report>` — one-shot ANSI render of the current state. The tmux side pane uses the same renderer behind the menu keys.
+- `ntts-flightlog attention [--format text|json]` — action queue for what needs operator attention before continuing.
 - `ntts-flightlog handoff [--format text|md|json]` — compact summary to paste into a new agent/session before continuing work.
+- `ntts-flightlog share --window week --format md` — portable status report for PRs, issues, email, or Phase E team-share evidence.
 - `ntts-flightlog doctor` — local preflight for binary path/version, DB migrations, pane liveness, and installed skill wrapper delegation.
 - Inside the pane, press `1`–`5` to switch views, `r` to reload, `q` to quit. Click a turn title with cmd/ctrl held to open the per-turn file (terminal must support OSC 8 hyperlinks).
 

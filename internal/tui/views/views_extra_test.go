@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ntts9990/ntts-flightlog/internal/db"
+	"github.com/ntts9990/ntts-flightlog/internal/metrics"
 	"github.com/ntts9990/ntts-flightlog/internal/tui/views"
 )
 
@@ -481,6 +482,14 @@ func TestRenderReport_WithData(t *testing.T) {
 			{DecisionEntryID: "e2", Status: "accepted"},
 			{DecisionEntryID: "e5", Status: "superseded"},
 		},
+		Attention: []metrics.AttentionItem{
+			{
+				Severity:          metrics.AttentionSeverityHigh,
+				Title:             "근거 없는 결정",
+				Reason:            "유효한 결정에 연결된 evidence가 없습니다.",
+				RecommendedAction: "evidence --link로 근거를 연결하세요.",
+			},
+		},
 	}
 	got := views.RenderReport(data)
 	if strings.Contains(got, "Phase B4") {
@@ -506,7 +515,7 @@ func TestRenderReport_WithData(t *testing.T) {
 	if !strings.Contains(got, "블로커") {
 		t.Error("RenderReport: missing blocker sub-count")
 	}
-	for _, want := range []string{"완료 턴: 1", "진행 중: 1", "평균 완료 시간: 2m 00s", "유효 1", "대체됨 1", "근거 연결 결정: 1/2 (50%)", "열린 블로커: 1", "해결됨: 1"} {
+	for _, want := range []string{"주의 필요", "근거 없는 결정", "완료 턴: 1", "진행 중: 1", "평균 완료 시간: 2m 00s", "유효 1", "대체됨 1", "근거 연결 결정: 1/2 (50%)", "열린 블로커: 1", "해결됨: 1"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("RenderReport: missing %q in:\n%s", want, got)
 		}

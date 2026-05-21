@@ -59,6 +59,8 @@ func init() {
 		newViewCmd(),
 		newMigrateCmd(),
 		newReportCmd(),
+		newAttentionCmd(),
+		newShareCmd(),
 		newHandoffCmd(),
 		newAgentStatsCmd(),
 		newDoctorCmd(),

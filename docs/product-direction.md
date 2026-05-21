@@ -66,3 +66,8 @@ work-management object.
 - Do not surface raw tool-call volume unless it directly improves orientation.
 - Prefer compact status objects over prose-heavy logs in the side pane.
 - Keep Korean pane-visible content by default.
+
+## Product Decision Records
+
+- `docs/user-investor-question-decisions.md` maps likely user, manager, buyer,
+  and investor questions to explicit attach / next / later / reject decisions.
