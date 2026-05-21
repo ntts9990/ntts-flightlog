@@ -17,11 +17,18 @@ Source: `.omc/specs/alpha-dogfood-log.md`
 
 Source: `.omc/specs/v2-agent-operator-decisions.md`
 
-- turn_duration / turn 소요시간: TODO quote from agent comparison decision.
-- blocker_accumulation / blocker 누적시간: TODO quote from agent comparison decision.
-- agent_completion / agent 완료율: TODO quote from agent comparison decision.
-- agent_blocker_freq / agent blocker 빈도: TODO quote from agent comparison decision.
-- evidence_bound_decisions / evidence-bound decision: TODO quote from agent comparison decision.
+- turn_duration / turn 소요시간: 2026-05-21 agent-operator decision cites
+  21 completed turns, average 2m 9s, with completed turns ranging from 0s to
+  10m 14s.
+- blocker_accumulation / blocker 누적시간: 2026-05-21 agent-operator decision
+  records no blocker rows in the all-window report.
+- agent_completion / agent 완료율: 2026-05-21 agent-operator decision records
+  codex sessions=4, turns=6, complete=5, completion=83.3%, and unknown
+  sessions=12, turns=18, complete=16, completion=88.9%.
+- agent_blocker_freq / agent blocker 빈도: 2026-05-21 agent-operator
+  decision records codex blocker_freq=0.000 and unknown blocker_freq=0.000.
+- evidence_bound_decisions / evidence-bound decision: 2026-05-21
+  agent-operator decision records 0/1 decisions linked to evidence, 0.0%.
 - Adversarial review: TODO link reviewer log challenging whether citations were useful or gate-driven.
 
 ## Team-Share
