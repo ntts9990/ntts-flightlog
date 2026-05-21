@@ -38,6 +38,7 @@ Available Commands:
 Flags:
       --agent string   override auto-detected agent name (e.g. claude, codex, gemini)
   -h, --help           help for flightlog
+      --lane string    lane/team owner label for parallel work
   -v, --version        version for flightlog
 
 Use "flightlog [command] --help" for more information about a command.

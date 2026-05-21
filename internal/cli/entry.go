@@ -43,7 +43,7 @@ func writeEntry(s *session, kind, title, detail string) error {
 		return fmt.Errorf("writeEntry: %w", err)
 	}
 	_ = entryID // may be used by evidence --link flag in A4 extension
-	if err := worklog.AppendEntry(s.cfg, kind, title, detail); err != nil {
+	if err := worklog.AppendEntryForLane(s.cfg, s.lane, kind, title, detail); err != nil {
 		return err
 	}
 	// A.5: print anchor reminder if turn has intent AND ≥5 entries since last shown.
@@ -54,7 +54,7 @@ func writeEntry(s *session, kind, title, detail string) error {
 // maybeReminderAnchor prints "⚓ ANCHOR REMINDER" to stdout if the active turn
 // has a non-NULL intent and ≥5 entries have been written since anchor_last_shown_at.
 func maybeReminderAnchor(s *session) {
-	turnID := s.cfg.ActiveTurnID()
+	turnID := s.activeTurnID()
 	if turnID == "" {
 		return
 	}
@@ -85,13 +85,13 @@ func insertEntry(s *session, kind, title, detail string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	const q = `INSERT INTO entries (session_id, turn_id, kind, title, detail, created_at, agent_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id`
+	const q = `INSERT INTO entries (session_id, turn_id, kind, title, detail, created_at, agent_id, lane)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
 	var id string
 	err = s.store.QueryRow(q,
 		sessionID,
-		nullStr(s.cfg.ActiveTurnID()),
-		kind, title, nullStr(detail), now(), nullStr(s.agentID),
+		nullStr(s.activeTurnID()),
+		kind, title, nullStr(detail), now(), nullStr(s.agentID), nullStr(s.lane),
 	).Scan(&id)
 	if err != nil {
 		return "", fmt.Errorf("insert entry (%s): %w", kind, err)

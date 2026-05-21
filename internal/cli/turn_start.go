@@ -13,6 +13,7 @@ func newTurnStartCmd() *cobra.Command {
 	var intent string
 	var constraintsRaw string
 	var doneWhen string
+	var parentTurn string
 
 	cmd := &cobra.Command{
 		Use:   "turn-start <제목>",
@@ -40,11 +41,6 @@ func newTurnStartCmd() *cobra.Command {
 				return err
 			}
 
-			// Record turn start epoch (v1 compat).
-			if err := worklog.WriteFile(s.cfg.TurnStart, worklog.EpochSeconds()); err != nil {
-				return err
-			}
-
 			// Parse --constraints into JSON array.
 			var constraintsJSON string
 			var constraints []string
@@ -65,11 +61,11 @@ func newTurnStartCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			turnID, err := insertTurnWithAnchor(s, sessionID, n, title, intent, constraintsJSON, doneWhen)
+			turnID, err := insertTurnWithAnchor(s, sessionID, n, title, intent, constraintsJSON, doneWhen, parentTurn)
 			if err != nil {
 				return err
 			}
-			if err := worklog.WriteFile(s.cfg.TurnIDFile, turnID); err != nil {
+			if err := s.writeActiveTurn(turnID, n); err != nil {
 				return err
 			}
 
@@ -87,7 +83,7 @@ func newTurnStartCmd() *cobra.Command {
 			if anchorBlock != "" {
 				entryDetail += "\n" + anchorBlock
 			}
-			if err := worklog.AppendEntry(s.cfg, kindKey, title, entryDetail); err != nil {
+			if err := worklog.AppendEntryForLane(s.cfg, s.lane, kindKey, title, entryDetail); err != nil {
 				return err
 			}
 
@@ -106,19 +102,20 @@ func newTurnStartCmd() *cobra.Command {
 	cmd.Flags().StringVar(&intent, "intent", "", "턴 의도 (에이전트 컨텍스트 유지용)")
 	cmd.Flags().StringVar(&constraintsRaw, "constraints", "", "쉼표 구분 제약 조건 목록")
 	cmd.Flags().StringVar(&doneWhen, "done-when", "", "완료 조건 설명")
+	cmd.Flags().StringVar(&parentTurn, "parent-turn", "", "상위 턴 ID (worker lane 연결용)")
 	return cmd
 }
 
 // insertTurnWithAnchor inserts a turn row with optional TIA fields and returns its ID.
-func insertTurnWithAnchor(s *session, sessionID string, seqNo int, title, intent, constraintsJSON, doneWhen string) (string, error) {
+func insertTurnWithAnchor(s *session, sessionID string, seqNo int, title, intent, constraintsJSON, doneWhen, parentTurn string) (string, error) {
 	const q = `INSERT INTO turns
 		(session_id, sequence_no, title, started_at, status, agent_id,
-		 intent, constraints_json, done_when)
-		VALUES (?, ?, ?, ?, 'active', ?, ?, ?, ?) RETURNING id`
+		 intent, constraints_json, done_when, lane, parent_turn_id)
+		VALUES (?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?) RETURNING id`
 	var id string
 	err := s.store.QueryRow(q,
 		nullStr(sessionID), seqNo, nullStr(title), now(), nullStr(s.agentID),
-		nullStr(intent), nullStr(constraintsJSON), nullStr(doneWhen),
+		nullStr(intent), nullStr(constraintsJSON), nullStr(doneWhen), nullStr(s.lane), nullStr(parentTurn),
 	).Scan(&id)
 	if err != nil {
 		return "", fmt.Errorf("insert turn: %w", err)
@@ -128,7 +125,7 @@ func insertTurnWithAnchor(s *session, sessionID string, seqNo int, title, intent
 
 // insertTurn is kept for callers that don't need anchor fields.
 func insertTurn(s *session, sessionID string, seqNo int, title string) (string, error) {
-	return insertTurnWithAnchor(s, sessionID, seqNo, title, "", "", "")
+	return insertTurnWithAnchor(s, sessionID, seqNo, title, "", "", "", "")
 }
 
 // buildAnchorBlock returns the Korean anchor block string for main.md mirroring.

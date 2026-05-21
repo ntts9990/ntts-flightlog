@@ -42,7 +42,7 @@ func writeDecision(s *session, title, detail string) error {
 	if err := insertDecisionStatus(s, decisionID, db.DecisionStatusAccepted, "", "", ""); err != nil {
 		return err
 	}
-	if err := worklog.AppendEntry(s.cfg, db.KindDecision, title, detail); err != nil {
+	if err := worklog.AppendEntryForLane(s.cfg, s.lane, db.KindDecision, title, detail); err != nil {
 		return err
 	}
 	maybeReminderAnchor(s)

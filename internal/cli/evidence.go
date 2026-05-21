@@ -52,7 +52,7 @@ func newEvidenceCmd() *cobra.Command {
 				}
 			}
 
-			return worklog.AppendEntry(s.cfg, db.KindEvidence, title, detail)
+			return worklog.AppendEntryForLane(s.cfg, s.lane, db.KindEvidence, title, detail)
 		},
 	}
 	cmd.Flags().StringVar(&linkDecision, "link", "", "연결할 결정 항목 ID 또는 고유한 제목 일부")

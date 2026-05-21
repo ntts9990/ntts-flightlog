@@ -11,6 +11,7 @@ import (
 var (
 	appVersion string
 	agentFlag  string // --agent <name> global override
+	laneFlag   string // --lane <name> global lane/team owner
 )
 
 // rootCmd is the top-level command: `flightlog`.
@@ -38,6 +39,7 @@ func SetVersion(v string) {
 func init() {
 	// Global flag: agent override (propagates to all subcommands).
 	rootCmd.PersistentFlags().StringVar(&agentFlag, "agent", "", "override auto-detected agent name (e.g. claude, codex, gemini)")
+	rootCmd.PersistentFlags().StringVar(&laneFlag, "lane", "", "lane/team owner label for parallel work")
 
 	// Register all subcommands.
 	rootCmd.AddCommand(

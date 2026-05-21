@@ -40,12 +40,12 @@ func newBlockerCmd() *cobra.Command {
 				VALUES (?, ?, ?, ?, 'open') RETURNING id`
 			var blockerID string
 			if err := s.store.QueryRow(bq,
-				nullStr(s.cfg.ActiveTurnID()), entryID, title, now(),
+				nullStr(s.activeTurnID()), entryID, title, now(),
 			).Scan(&blockerID); err != nil {
 				return fmt.Errorf("insert blocker: %w", err)
 			}
 
-			return worklog.AppendEntry(s.cfg, db.KindBlocker, title, detail)
+			return worklog.AppendEntryForLane(s.cfg, s.lane, db.KindBlocker, title, detail)
 		},
 	}
 	return cmd

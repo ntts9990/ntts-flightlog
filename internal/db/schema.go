@@ -13,6 +13,9 @@ const (
 	TableSchemaMigrations      = "_schema_migrations"
 )
 
+// Lane values. Empty lane means the default single-lane workflow.
+const DefaultLane = ""
+
 // View names (filtered over entries by kind).
 const (
 	ViewDecisions = "decisions"

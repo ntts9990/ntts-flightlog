@@ -12,14 +12,15 @@
       "Added share command for portable Markdown or JSON team status packets.",
       "Made handoff a first-class continuation artifact for compaction, restart, agent switching, and reviewer context.",
       "Added storage and redaction policy as the gate for future hook/event ingest.",
+      "Added the first lane/team tracking slice with --lane, lane-specific active turn pointers, and parent_turn_id.",
       "Clarified product boundary around a local-first terminal sidecar instead of a cloud dashboard, raw transcript archive, or agent runner."
     ],
     "active_work": [
       "Use the storage/redaction policy as the prerequisite for any future automated hook/event ingest.",
+      "Harden lane/team tracking in report, handoff, share, and future ingest surfaces.",
       "Preserve local-only operation and Korean-first pane output while adding more structured machine-readable surfaces."
     ],
     "next_priorities": [
-      "Add lane/team attribution for parallel subagent work.",
       "Add bounded ingest command for redacted hook events and reviewable evidence/blocker candidates.",
       "Add hook starter kits only after redaction and retention rules are documented.",
       "Add evidence-check or evidence-report wrappers over Phase E evidence workflows."
@@ -65,6 +66,16 @@
       "required_secrets": [],
       "stability": "stable",
       "notes": "Local metrics summary for work volume, attention, decision evidence coverage, blockers, and agent attribution."
+    },
+    {
+      "kind": "cli",
+      "name": "lane tracking",
+      "command_or_path": "ntts-flightlog --lane worker-a turn-start \"parallel task\"",
+      "schema_version": "lane.v1",
+      "network_posture": "offline",
+      "required_secrets": [],
+      "stability": "beta",
+      "notes": "Lane-aware write commands keep separate active turn pointers for parallel workers while preserving the default single-lane workflow."
     },
     {
       "kind": "json-artifact",
@@ -140,7 +151,7 @@
     "fields_experimental": [
       "agent attribution rates until lane/team tracking lands",
       "future hook/event ingest fields",
-      "future lane/team metadata fields",
+      "future lane/team metadata fields beyond lane and parent_turn_id",
       "optional redacted hook payload retention controls",
       "pane-rendered text layout"
     ]
@@ -173,7 +184,7 @@
   ],
   "known_risks": [
     "Hook/event ingest must follow docs/storage-redaction-policy.md and must not store unredacted payloads by default.",
-    "Parallel subagent tracking currently depends on one global active turn unless lane/team tracking is added.",
+    "Lane/team tracking has a first slice, but richer agent comparison should wait for more lane-aware reporting and ingest coverage.",
     "Pane-visible text is optimized for Korean terminal operation and should not be treated as a stable machine contract.",
     "Generated runtime state can contain local project context and should remain gitignored."
   ],

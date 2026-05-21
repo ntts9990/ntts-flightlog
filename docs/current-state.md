@@ -32,9 +32,9 @@ Current implementation status:
   `share`, and report-view attention surfacing.
 - Product direction has been clarified around the local-first terminal sidecar
   wedge.
-- The next implementation sequence is storage/redaction policy, lane/team
-  tracking, bounded hook/event ingest, hook starter kits, evidence automation,
-  then richer agent comparison.
+- The next implementation sequence is bounded hook/event ingest, hook starter
+  kits, evidence automation, and then richer agent comparison. Storage/redaction
+  policy and the first lane/team tracking slice are now implemented.
 
 ## 2. Developer Goal
 
@@ -335,10 +335,10 @@ Current roadmap from `docs/user-investor-question-decisions.md`:
 
 ```text
 done:
-  handoff -> attention -> share
+  handoff -> attention -> share -> storage/redaction policy -> first lane tracking slice
 
 next:
-  storage/redaction policy -> lane tracking -> ingest -> hooks -> evidence automation
+  ingest -> hooks -> evidence automation -> richer agent comparison
 
 later:
   richer agent comparison
@@ -356,7 +356,7 @@ Immediate product sequence:
 1. Finalize and commit the current attention/share/product-scope work.
 2. Use `docs/storage-redaction-policy.md` as the safety boundary for future
    automated ingest.
-3. Implement lane/team tracking.
+3. Extend lane/team tracking only where richer parallel ownership is needed.
 4. Implement bounded hook/event ingest.
 5. Add hook starter kits as opt-in printed snippets and diagnostics.
 6. Add evidence automation wrappers.
@@ -404,6 +404,8 @@ Done or attached in the product:
 - `attention` action queue.
 - `share` portable team/reviewer status export.
 - Storage and redaction policy for future automated hook payloads.
+- First lane/team tracking slice with `--lane`, lane-specific active turns,
+  `parent_turn_id`, and lane labels in structured outputs.
 - Phase E evidence workflow documentation.
 - Product boundary documentation.
 
@@ -411,7 +413,6 @@ Done or attached in the product:
 
 Not done or not yet attached:
 
-- Lane/team tracking.
 - Generic hook/event ingest.
 - Hook starter kits.
 - `evidence-check` and `evidence-report` commands.

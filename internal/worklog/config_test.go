@@ -37,6 +37,9 @@ func TestDefaultConfig_EnvOverride(t *testing.T) {
 	if c.TurnsDir != filepath.Join(dir, "turns") {
 		t.Errorf("TurnsDir = %q", c.TurnsDir)
 	}
+	if c.LanesDir != filepath.Join(dir, "lanes") {
+		t.Errorf("LanesDir = %q", c.LanesDir)
+	}
 	if c.PaneFile != filepath.Join(dir, "pane-id") {
 		t.Errorf("PaneFile = %q", c.PaneFile)
 	}
@@ -63,7 +66,7 @@ func TestEnsureDir(t *testing.T) {
 	if err := c.EnsureDir(); err != nil {
 		t.Fatalf("EnsureDir: %v", err)
 	}
-	for _, path := range []string{c.Dir, c.TurnsDir} {
+	for _, path := range []string{c.Dir, c.TurnsDir, c.LanesDir} {
 		if _, err := os.Stat(path); err != nil {
 			t.Errorf("EnsureDir: %q not created: %v", path, err)
 		}
@@ -75,6 +78,26 @@ func TestReadFile_Missing(t *testing.T) {
 	got := worklog.ReadFile("/nonexistent/definitely/not/here.txt")
 	if got != "" {
 		t.Errorf("ReadFile missing: got %q, want empty", got)
+	}
+}
+
+func TestLaneStatePaths(t *testing.T) {
+	c := makeConfig(t)
+	if got := worklog.SafeLaneName("worker/a b"); got != "worker_a_b" {
+		t.Fatalf("SafeLaneName = %q", got)
+	}
+	if got := c.LaneTurnIDFile(""); got != c.TurnIDFile {
+		t.Fatalf("default lane turn-id file = %q, want %q", got, c.TurnIDFile)
+	}
+	want := filepath.Join(c.LanesDir, "worker_a_b", "turn-id")
+	if got := c.LaneTurnIDFile("worker/a b"); got != want {
+		t.Fatalf("lane turn-id file = %q, want %q", got, want)
+	}
+	if err := c.EnsureLaneDir("worker/a b"); err != nil {
+		t.Fatalf("EnsureLaneDir: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(c.LanesDir, "worker_a_b")); err != nil {
+		t.Fatalf("lane dir missing: %v", err)
 	}
 }
 

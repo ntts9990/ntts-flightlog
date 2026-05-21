@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/ntts9990/ntts-flightlog/internal/metrics"
@@ -25,6 +26,7 @@ func RenderReport(data *WorklogData) string {
 		entryCounts[e.Kind]++
 	}
 	turns := summarizeTurns(data.Turns)
+	lanes := summarizeLanes(data.Turns)
 	decisions := summarizeDecisions(data)
 	blockers := summarizeBlockers(data)
 
@@ -42,6 +44,9 @@ func RenderReport(data *WorklogData) string {
 	if turns.completedWithDuration > 0 {
 		fmt.Fprintf(&sb, "%s평균 완료 시간: %s%s\n", Dim, formatDurationMS(turns.totalElapsedMS/int64(turns.completedWithDuration)), Reset)
 	}
+	if len(lanes) > 0 {
+		fmt.Fprintf(&sb, "%sLane: %s%s\n", Dim, strings.Join(lanes, " · "), Reset)
+	}
 	sb.WriteString("\n")
 
 	sb.WriteString(Bold + "결정 품질" + Reset + "\n")
@@ -58,6 +63,24 @@ func RenderReport(data *WorklogData) string {
 	}
 
 	return sb.String()
+}
+
+func summarizeLanes(turns []Turn) []string {
+	counts := make(map[string]int)
+	for _, t := range turns {
+		if t.Lane.Valid && t.Lane.String != "" {
+			counts[t.Lane.String]++
+		}
+	}
+	if len(counts) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(counts))
+	for lane, count := range counts {
+		out = append(out, fmt.Sprintf("%s %d", lane, count))
+	}
+	sort.Strings(out)
+	return out
 }
 
 func writeAttentionSection(sb *strings.Builder, items []metrics.AttentionItem) {

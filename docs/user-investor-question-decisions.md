@@ -108,6 +108,7 @@ Current attached surfaces:
 - `ntts-flightlog handoff --format text|md|json`
 - `ntts-flightlog attention --format text|json`
 - `ntts-flightlog share --window day|week|all --format md|json`
+- `ntts-flightlog --lane <name> turn-start|entry|decision|evidence|blocker|turn-end`
 - `ntts-flightlog agent-stats`
 - `ntts-flightlog doctor`
 
@@ -292,10 +293,10 @@ Reasons:
 
 ```text
 done:
-  handoff -> attention -> share
+  handoff -> attention -> share -> storage/redaction policy -> first lane tracking slice
 
 next:
-  storage/redaction policy -> lane tracking -> ingest -> hooks -> evidence automation
+  ingest -> hooks -> evidence automation
 
 later:
   richer agent comparison
@@ -310,12 +311,10 @@ not now:
 
 The practical next implementation sequence is:
 
-1. Storage/redaction policy
-2. Lane/team tracking
-3. Generic hook/event ingest
-4. Hook starter kits
-5. Evidence automation
-6. Agent comparison after lane data is trustworthy
+1. Generic hook/event ingest
+2. Hook starter kits
+3. Evidence automation
+4. Agent comparison after lane data is trustworthy
 
 ## Investor-Safe Positioning
 

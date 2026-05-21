@@ -51,7 +51,7 @@ func newDecisionSupersedeCmd() *cobra.Command {
 			if err := worklog.EnsureMainMd(s.cfg, ""); err != nil {
 				return err
 			}
-			if err := worklog.AppendEntry(s.cfg, db.KindDecision, newTitle, detail); err != nil {
+			if err := worklog.AppendEntryForLane(s.cfg, s.lane, db.KindDecision, newTitle, detail); err != nil {
 				return err
 			}
 			maybeReminderAnchor(s)

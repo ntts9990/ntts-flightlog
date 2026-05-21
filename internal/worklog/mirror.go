@@ -75,6 +75,12 @@ func EnsureMainMd(c *Config, title string) error {
 // AppendEntry appends a v1-format entry line to main.md and the current turn file.
 // Format: `\n### TS [kind] title\ndetail`
 func AppendEntry(c *Config, kind, title, detail string) error {
+	return AppendEntryForLane(c, "", kind, title, detail)
+}
+
+// AppendEntryForLane appends a v1-format entry line to main.md and the lane's
+// current turn file when that lane has an active turn.
+func AppendEntryForLane(c *Config, lane, kind, title, detail string) error {
 	if err := EnsureMainMd(c, ""); err != nil {
 		return err
 	}
@@ -82,7 +88,7 @@ func AppendEntry(c *Config, kind, title, detail string) error {
 	if err := appendToFile(c.MainMd, block); err != nil {
 		return fmt.Errorf("mirror: append to main.md: %w", err)
 	}
-	return appendToCurrentTurn(c, kind, title, detail)
+	return appendToCurrentTurnForLane(c, lane, kind, title, detail)
 }
 
 // formatEntryBlock returns the v1-format `### TS [kind] title\ndetail` block.
@@ -98,10 +104,14 @@ func formatEntryBlock(kind, title, detail string) string {
 
 // appendToCurrentTurn appends an entry to the current turn file if one is active.
 func appendToCurrentTurn(c *Config, kind, title, detail string) error {
-	if _, err := os.Stat(c.TurnStart); os.IsNotExist(err) {
+	return appendToCurrentTurnForLane(c, "", kind, title, detail)
+}
+
+func appendToCurrentTurnForLane(c *Config, lane, kind, title, detail string) error {
+	if _, err := os.Stat(c.LaneTurnStartFile(lane)); os.IsNotExist(err) {
 		return nil // no active turn
 	}
-	n := c.CurrentTurnNumber()
+	n := c.ActiveTurnNumberForLane(lane)
 	if n == 0 {
 		return nil
 	}

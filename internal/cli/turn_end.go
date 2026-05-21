@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"time"
 
@@ -32,7 +31,7 @@ func newTurnEndCmd() *cobra.Command {
 				return err
 			}
 
-			n := s.cfg.CurrentTurnNumber()
+			n := s.activeTurnNumber()
 			turnLabel := "?"
 			if n > 0 {
 				turnLabel = strconv.Itoa(n)
@@ -41,7 +40,7 @@ func newTurnEndCmd() *cobra.Command {
 			// Compute elapsed from turn-start-epoch.
 			var elapsedStr string
 			var elapsedMS int64
-			if raw := worklog.ReadFile(s.cfg.TurnStart); raw != "" {
+			if raw := worklog.ReadFile(s.cfg.LaneTurnStartFile(s.lane)); raw != "" {
 				var startEpoch int64
 				fmt.Sscanf(raw, "%d", &startEpoch)
 				elapsed := time.Now().Unix() - startEpoch
@@ -52,7 +51,7 @@ func newTurnEndCmd() *cobra.Command {
 			}
 
 			// Update turn in SQLite.
-			turnID := s.cfg.ActiveTurnID()
+			turnID := s.activeTurnID()
 			if turnID != "" {
 				if _, err := s.store.Exec(
 					`UPDATE turns SET ended_at = ?, elapsed_ms = ?, status = 'complete', outcome = ? WHERE id = ?`,
@@ -63,13 +62,12 @@ func newTurnEndCmd() *cobra.Command {
 			}
 
 			// Clean up v1 compat + v2 state files.
-			_ = os.Remove(s.cfg.TurnStart)
-			_ = os.Remove(s.cfg.TurnIDFile)
+			s.clearActiveTurn()
 
 			// Append turn-end entry.
 			kindKey := fmt.Sprintf("turn-%s-end", turnLabel)
 			detail := fmt.Sprintf("소요 시간: %s.", elapsedStr)
-			if err := worklog.AppendEntry(s.cfg, kindKey, summary, detail); err != nil {
+			if err := worklog.AppendEntryForLane(s.cfg, s.lane, kindKey, summary, detail); err != nil {
 				return err
 			}
 

@@ -46,6 +46,8 @@ type handoffTurn struct {
 	Constraints []string `json:"constraints,omitempty"`
 	DoneWhen    string   `json:"done_when,omitempty"`
 	Outcome     string   `json:"outcome,omitempty"`
+	Lane        string   `json:"lane,omitempty"`
+	ParentTurn  string   `json:"parent_turn,omitempty"`
 }
 
 type handoffBlocker struct {
@@ -118,7 +120,7 @@ func newHandoffCmd() *cobra.Command {
 
 func buildHandoffPacket(s *session, data *tuiviews.WorklogData, generatedAt time.Time) *handoffPacket {
 	sessionID := s.cfg.ActiveSessionID()
-	activeTurnID := s.cfg.ActiveTurnID()
+	activeTurnID := s.activeTurnID()
 	status := readHandoffStatus(s)
 	currentSession := selectSession(data.Sessions, sessionID)
 	if sessionID == "" && currentSession != nil {
@@ -239,6 +241,8 @@ func formatHandoffTurn(t tuiviews.Turn, now time.Time) *handoffTurn {
 		Constraints: parseConstraints(t.ConstraintsJSON.String),
 		DoneWhen:    nullString(t.DoneWhen, ""),
 		Outcome:     nullString(t.Outcome, ""),
+		Lane:        nullString(t.Lane, ""),
+		ParentTurn:  nullString(t.ParentTurnID, ""),
 	}
 }
 

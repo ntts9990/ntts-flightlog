@@ -41,6 +41,7 @@ type shareTurn struct {
 	Sequence  int    `json:"sequence"`
 	Title     string `json:"title"`
 	Agent     string `json:"agent,omitempty"`
+	Lane      string `json:"lane,omitempty"`
 	StartedAt string `json:"started_at"`
 	EndedAt   string `json:"ended_at,omitempty"`
 	Elapsed   string `json:"elapsed,omitempty"`
@@ -166,6 +167,7 @@ func buildSharePacket(data *tuiviews.WorklogData, snap *metrics.Snapshot, attent
 			Sequence:  t.SequenceNo,
 			Title:     nullString(t.Title, "(제목 없음)"),
 			Agent:     nullString(t.AgentID, ""),
+			Lane:      nullString(t.Lane, ""),
 			StartedAt: t.StartedAt,
 			EndedAt:   nullString(t.EndedAt, ""),
 			Elapsed:   shareElapsed(t),
@@ -257,6 +259,9 @@ func renderShareMarkdown(packet sharePacket) string {
 			}
 			if t.Elapsed != "" {
 				line += " (" + t.Elapsed + ")"
+			}
+			if t.Lane != "" {
+				line += " [lane: " + t.Lane + "]"
 			}
 			b.WriteString(line + "\n")
 		}

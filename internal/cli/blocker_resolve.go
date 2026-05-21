@@ -67,7 +67,7 @@ func newBlockerResolveCmd() *cobra.Command {
 			if _, err := insertEntry(s, db.KindEvidence, title, detail); err != nil {
 				return err
 			}
-			return worklog.AppendEntry(s.cfg, db.KindEvidence, title, detail)
+			return worklog.AppendEntryForLane(s.cfg, s.lane, db.KindEvidence, title, detail)
 		},
 	}
 	return cmd

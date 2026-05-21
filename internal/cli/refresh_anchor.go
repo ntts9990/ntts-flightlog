@@ -37,7 +37,7 @@ anchor_last_shown_at 컬럼이 현재 시각으로 갱신됩니다.`,
 			if len(args) > 0 {
 				turnID = args[0]
 			} else {
-				turnID = s.cfg.ActiveTurnID()
+				turnID = s.activeTurnID()
 			}
 			if turnID == "" {
 				return fmt.Errorf("활성 턴이 없습니다. turn-start로 시작하세요.")

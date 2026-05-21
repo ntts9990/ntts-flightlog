@@ -43,6 +43,13 @@ The skill should call the installed Go CLI (`ntts-flightlog`, when `~/.local/bin
    ntts-flightlog turn-start "배포 실패 원인 조사"
    ```
 
+   For parallel worker lanes, add `--lane <name>`:
+
+   ```bash
+   ntts-flightlog --lane worker-a turn-start "검색 병렬 조사"
+   ntts-flightlog --lane worker-b turn-start "테스트 병렬 검증"
+   ```
+
 2. Update the worklog as the task changes:
 
    ```bash
@@ -84,6 +91,7 @@ If the CLI is not on PATH, call the skill script directly. It will delegate to `
 - `status <label> [focus] [next]`: replace the current status block.
 - `mode <solo|ralph|team|plan|review|autopilot|other> [detail]`: record the current execution mode.
 - `turn-start <title>`: append a colored turn start, reset turn timer, and create `.ntts-flightlog/turns/turn-{N}.md`.
+- `--lane <name>`: global flag for parallel worker/team lanes. Lane-aware turns keep separate active turn pointers and preserve lane labels in structured outputs.
 - `turn-end [summary]`: append a colored turn end with elapsed time. The per-turn file remains; the next `turn-start` opens a new file.
 - `entry <title> [detail]`: append a timestamped milestone (mirrored to the active turn file).
 - `decision <title> [detail]`: append a decision record (mirrored).

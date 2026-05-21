@@ -96,6 +96,7 @@ ntts-flightlog turn-end "배포 smoke 검증 완료"
 
 ```text
 ntts-flightlog auto [title]
+ntts-flightlog --lane worker-a turn-start <title> [--parent-turn id]
 ntts-flightlog start [title]
 ntts-flightlog stop
 ntts-flightlog status <label> [focus] [next]
@@ -121,6 +122,10 @@ ntts-flightlog view <flat|turns|decisions|blockers|report|tui>
 ntts-flightlog migrate
 ntts-flightlog self-upgrade
 ```
+
+Use `--lane <name>` on write commands when multiple subagents or team workers
+are logging in parallel. Each lane keeps its own active turn pointer so
+`worker-a` can end its current turn without closing `worker-b`'s turn.
 
 ## Metrics
 
@@ -170,6 +175,11 @@ Use `ntts-flightlog share --window week --format md` when the status needs to
 leave the pane for a PR, issue, email, or Phase E team-share artifact. It
 includes completed turns, active blockers, decisions/evidence, metric
 highlights, and requested review/help.
+
+For parallel work, add `--lane worker-a` to `turn-start`, `entry`, `decision`,
+`evidence`, `blocker`, `turn-end`, `handoff`, `refresh-anchor`, and
+`drift-check`. Lane labels appear in JSON handoff/share output and the report
+view's lane summary when lane metadata exists.
 
 Turn-start titles in the pane are OSC 8 hyperlinks. cmd/ctrl-click in iTerm2, WezTerm, Kitty, Ghostty, or the VS Code integrated terminal opens the corresponding `turn-{N}.md` in your default editor. Outside the pane, use `ntts-flightlog turn-path N` to get the path directly.
 

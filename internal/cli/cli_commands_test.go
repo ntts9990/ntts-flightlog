@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ntts9990/ntts-flightlog/internal/db"
 	"github.com/spf13/cobra"
 )
 
@@ -82,6 +83,75 @@ func TestTurnStartCmd_CreatesSessionWithoutStart(t *testing.T) {
 	execRunE(t, newTurnStartCmd(), false, "시작 없이 턴")
 	if b, err := os.ReadFile(filepath.Join(dir, "session-id")); err != nil || len(b) == 0 {
 		t.Fatalf("turn-start should create session-id, got len=%d err=%v", len(b), err)
+	}
+}
+
+func TestLaneTurnsKeepSeparateActivePointers(t *testing.T) {
+	dir := setupEnv(t)
+	oldLane := laneFlag
+	t.Cleanup(func() { laneFlag = oldLane })
+
+	laneFlag = "worker-a"
+	execRunE(t, newTurnStartCmd(), false, "worker A 턴")
+	execRunE(t, newEntryCmd(), false, "A 작업", "lane A")
+
+	laneFlag = "worker-b"
+	execRunE(t, newTurnStartCmd(), false, "worker B 턴")
+	execRunE(t, newEntryCmd(), false, "B 작업", "lane B")
+
+	if _, err := os.Stat(filepath.Join(dir, "lanes", "worker-a", "turn-id")); err != nil {
+		t.Fatalf("worker-a active turn missing: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "lanes", "worker-b", "turn-id")); err != nil {
+		t.Fatalf("worker-b active turn missing: %v", err)
+	}
+
+	laneFlag = "worker-a"
+	execRunE(t, newTurnEndCmd(), false, "A 완료")
+	if _, err := os.Stat(filepath.Join(dir, "lanes", "worker-a", "turn-id")); !os.IsNotExist(err) {
+		t.Fatalf("worker-a active turn should be cleared, err=%v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "lanes", "worker-b", "turn-id")); err != nil {
+		t.Fatalf("worker-b active turn should remain: %v", err)
+	}
+
+	store, err := db.Open(filepath.Join(dir, "flightlog.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer store.Close()
+
+	rows, err := store.Query(`SELECT lane, COUNT(*) FROM turns GROUP BY lane ORDER BY lane`)
+	if err != nil {
+		t.Fatalf("query lanes: %v", err)
+	}
+	defer rows.Close()
+	got := map[string]int{}
+	for rows.Next() {
+		var lane string
+		var count int
+		if err := rows.Scan(&lane, &count); err != nil {
+			t.Fatalf("scan lane: %v", err)
+		}
+		got[lane] = count
+	}
+	if got["worker-a"] != 1 || got["worker-b"] != 1 {
+		t.Fatalf("turn lane counts = %#v", got)
+	}
+
+	aTurn, err := os.ReadFile(filepath.Join(dir, "turns", "turn-1.md"))
+	if err != nil {
+		t.Fatalf("read turn-1: %v", err)
+	}
+	bTurn, err := os.ReadFile(filepath.Join(dir, "turns", "turn-2.md"))
+	if err != nil {
+		t.Fatalf("read turn-2: %v", err)
+	}
+	if !strings.Contains(string(aTurn), "A 작업") || strings.Contains(string(aTurn), "B 작업") {
+		t.Fatalf("turn-1 lane mirror wrong:\n%s", string(aTurn))
+	}
+	if !strings.Contains(string(bTurn), "B 작업") || strings.Contains(string(bTurn), "A 작업") {
+		t.Fatalf("turn-2 lane mirror wrong:\n%s", string(bTurn))
 	}
 }
 

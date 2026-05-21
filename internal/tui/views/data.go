@@ -22,16 +22,18 @@ type Session struct {
 
 // Turn represents a work turn row from the turns table (including A.5 anchor cols).
 type Turn struct {
-	ID         string
-	SessionID  string
-	SequenceNo int
-	Title      sql.NullString
-	StartedAt  string
-	EndedAt    sql.NullString
-	Status     string
-	ElapsedMs  sql.NullInt64
-	AgentID    sql.NullString
-	Outcome    sql.NullString
+	ID           string
+	SessionID    string
+	SequenceNo   int
+	Title        sql.NullString
+	StartedAt    string
+	EndedAt      sql.NullString
+	Status       string
+	ElapsedMs    sql.NullInt64
+	AgentID      sql.NullString
+	Outcome      sql.NullString
+	Lane         sql.NullString
+	ParentTurnID sql.NullString
 	// A.5 TIA anchor columns (0002_turn_anchors.sql)
 	Intent          sql.NullString
 	ConstraintsJSON sql.NullString
@@ -48,6 +50,7 @@ type Entry struct {
 	Detail    sql.NullString
 	CreatedAt string
 	AgentID   sql.NullString
+	Lane      sql.NullString
 }
 
 // Blocker represents a blocker state row tied to a blocker entry.
@@ -152,7 +155,7 @@ func loadSessions(d *db.DB) ([]Session, error) {
 func loadTurns(d *db.DB) ([]Turn, error) {
 	rows, err := d.Query(`
 		SELECT id, session_id, sequence_no, title, started_at, ended_at,
-		       status, elapsed_ms, agent_id, outcome,
+		       status, elapsed_ms, agent_id, outcome, lane, parent_turn_id,
 		       intent, constraints_json, done_when
 		FROM turns ORDER BY started_at, sequence_no`)
 	if err != nil {
@@ -165,7 +168,7 @@ func loadTurns(d *db.DB) ([]Turn, error) {
 		if err := rows.Scan(
 			&t.ID, &t.SessionID, &t.SequenceNo, &t.Title,
 			&t.StartedAt, &t.EndedAt, &t.Status, &t.ElapsedMs, &t.AgentID,
-			&t.Outcome, &t.Intent, &t.ConstraintsJSON, &t.DoneWhen,
+			&t.Outcome, &t.Lane, &t.ParentTurnID, &t.Intent, &t.ConstraintsJSON, &t.DoneWhen,
 		); err != nil {
 			return nil, err
 		}
@@ -176,7 +179,7 @@ func loadTurns(d *db.DB) ([]Turn, error) {
 
 func loadEntries(d *db.DB) ([]Entry, error) {
 	rows, err := d.Query(`
-		SELECT id, session_id, turn_id, kind, title, detail, created_at, agent_id
+		SELECT id, session_id, turn_id, kind, title, detail, created_at, agent_id, lane
 		FROM entries ORDER BY created_at`)
 	if err != nil {
 		return nil, err
@@ -187,7 +190,7 @@ func loadEntries(d *db.DB) ([]Entry, error) {
 		var e Entry
 		if err := rows.Scan(
 			&e.ID, &e.SessionID, &e.TurnID, &e.Kind,
-			&e.Title, &e.Detail, &e.CreatedAt, &e.AgentID,
+			&e.Title, &e.Detail, &e.CreatedAt, &e.AgentID, &e.Lane,
 		); err != nil {
 			return nil, err
 		}

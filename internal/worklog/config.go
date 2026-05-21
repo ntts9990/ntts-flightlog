@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 // Config holds all resolved paths for a worklog directory.
@@ -15,6 +16,7 @@ type Config struct {
 	Dir           string // e.g. .ntts-flightlog
 	MainMd        string // Dir/main.md
 	TurnsDir      string // Dir/turns
+	LanesDir      string // Dir/lanes
 	DBPath        string // Dir/flightlog.db
 	PaneFile      string // Dir/pane-id
 	SessionStart  string // Dir/session-start-epoch  (v1 compat)
@@ -36,6 +38,7 @@ func configFor(dir string) *Config {
 		Dir:           dir,
 		MainMd:        filepath.Join(dir, "main.md"),
 		TurnsDir:      filepath.Join(dir, "turns"),
+		LanesDir:      filepath.Join(dir, "lanes"),
 		DBPath:        filepath.Join(dir, "flightlog.db"),
 		PaneFile:      filepath.Join(dir, "pane-id"),
 		SessionStart:  filepath.Join(dir, "session-start-epoch"),
@@ -64,6 +67,9 @@ func defaultWorklogDir() string {
 func (c *Config) EnsureDir() error {
 	if err := os.MkdirAll(c.TurnsDir, 0o755); err != nil {
 		return fmt.Errorf("worklog: mkdir %s: %w", c.TurnsDir, err)
+	}
+	if err := os.MkdirAll(c.LanesDir, 0o755); err != nil {
+		return fmt.Errorf("worklog: mkdir %s: %w", c.LanesDir, err)
 	}
 	return nil
 }
@@ -127,4 +133,76 @@ func (c *Config) ActiveSessionID() string {
 // ActiveTurnID reads the v2 turn-id file.
 func (c *Config) ActiveTurnID() string {
 	return ReadFile(c.TurnIDFile)
+}
+
+// SafeLaneName normalizes a user-provided lane into a filename-safe label.
+func SafeLaneName(lane string) string {
+	lane = strings.TrimSpace(lane)
+	if lane == "" {
+		return ""
+	}
+	var b strings.Builder
+	for _, r := range lane {
+		switch {
+		case unicode.IsLetter(r), unicode.IsDigit(r):
+			b.WriteRune(r)
+		case r == '-', r == '_', r == '.':
+			b.WriteRune(r)
+		default:
+			b.WriteByte('_')
+		}
+	}
+	return strings.Trim(b.String(), "._-")
+}
+
+// LaneStateDir returns the state directory for a non-default lane.
+func (c *Config) LaneStateDir(lane string) string {
+	return filepath.Join(c.LanesDir, SafeLaneName(lane))
+}
+
+// LaneTurnIDFile returns the active turn ID file for a lane.
+func (c *Config) LaneTurnIDFile(lane string) string {
+	if SafeLaneName(lane) == "" {
+		return c.TurnIDFile
+	}
+	return filepath.Join(c.LaneStateDir(lane), "turn-id")
+}
+
+// LaneTurnStartFile returns the active turn start epoch file for a lane.
+func (c *Config) LaneTurnStartFile(lane string) string {
+	if SafeLaneName(lane) == "" {
+		return c.TurnStart
+	}
+	return filepath.Join(c.LaneStateDir(lane), "turn-start-epoch")
+}
+
+// LaneTurnNumberFile returns the active turn sequence file for a lane.
+func (c *Config) LaneTurnNumberFile(lane string) string {
+	if SafeLaneName(lane) == "" {
+		return c.TurnCounter
+	}
+	return filepath.Join(c.LaneStateDir(lane), "turn-number")
+}
+
+// EnsureLaneDir creates the state directory for a non-default lane.
+func (c *Config) EnsureLaneDir(lane string) error {
+	if SafeLaneName(lane) == "" {
+		return nil
+	}
+	return os.MkdirAll(c.LaneStateDir(lane), 0o755)
+}
+
+// ActiveTurnIDForLane reads the active turn ID for a lane.
+func (c *Config) ActiveTurnIDForLane(lane string) string {
+	return ReadFile(c.LaneTurnIDFile(lane))
+}
+
+// ActiveTurnNumberForLane reads the active turn number for a lane.
+func (c *Config) ActiveTurnNumberForLane(lane string) int {
+	s := ReadFile(c.LaneTurnNumberFile(lane))
+	if s == "" {
+		return 0
+	}
+	n, _ := strconv.Atoi(s)
+	return n
 }

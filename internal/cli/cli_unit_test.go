@@ -459,7 +459,7 @@ func TestInsertSession(t *testing.T) {
 func TestInsertTurnWithAnchor(t *testing.T) {
 	s := makeTestSession(t)
 	sessID, _ := insertSession(s, "세션", "solo")
-	id, err := insertTurnWithAnchor(s, sessID, 1, "첫 번째 턴", "의도", `["c1"]`, "완료 기준")
+	id, err := insertTurnWithAnchor(s, sessID, 1, "첫 번째 턴", "의도", `["c1"]`, "완료 기준", "")
 	if err != nil {
 		t.Fatalf("insertTurnWithAnchor: %v", err)
 	}
@@ -545,7 +545,7 @@ func TestMaybeReminderAnchor_WithTurn(t *testing.T) {
 	if err := worklog.WriteFile(s.cfg.SessionIDFile, sessID); err != nil {
 		t.Fatal(err)
 	}
-	turnID, _ := insertTurnWithAnchor(s, sessID, 1, "의도 있는 턴", "테스트 의도", "", "")
+	turnID, _ := insertTurnWithAnchor(s, sessID, 1, "의도 있는 턴", "테스트 의도", "", "", "")
 	if err := worklog.WriteFile(s.cfg.TurnIDFile, turnID); err != nil {
 		t.Fatal(err)
 	}
@@ -560,7 +560,7 @@ func TestMaybeReminderAnchor_Fires(t *testing.T) {
 	if err := worklog.WriteFile(s.cfg.SessionIDFile, sessID); err != nil {
 		t.Fatal(err)
 	}
-	turnID, _ := insertTurnWithAnchor(s, sessID, 1, "앵커 있는 턴", "리마인더 테스트 의도", "", "")
+	turnID, _ := insertTurnWithAnchor(s, sessID, 1, "앵커 있는 턴", "리마인더 테스트 의도", "", "", "")
 	if err := worklog.WriteFile(s.cfg.TurnIDFile, turnID); err != nil {
 		t.Fatal(err)
 	}
