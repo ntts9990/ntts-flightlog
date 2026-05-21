@@ -873,6 +873,9 @@ func TestViewerScript_Default(t *testing.T) {
 			t.Errorf("viewerScript: missing Korean key binding %q", key)
 		}
 	}
+	if !strings.Contains(script, "visual:[6]시각화") || !strings.Contains(script, `6) view="visual"`) {
+		t.Error("viewerScript: missing visual report menu binding")
+	}
 	for _, label := range []string{"[r/ㄱ]새로고침", "[q/ㅂ]종료"} {
 		if strings.Contains(script, label) {
 			t.Errorf("viewerScript: Korean alias should not be shown in label %q", label)

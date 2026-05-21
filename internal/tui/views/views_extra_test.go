@@ -525,6 +525,70 @@ func TestRenderReport_WithData(t *testing.T) {
 	}
 }
 
+// ── RenderVisualReport ────────────────────────────────────────────────────
+
+func TestRenderVisualReport_Nil(t *testing.T) {
+	got := views.RenderVisualReport(nil)
+	if !strings.Contains(got, "리포트 시각화") {
+		t.Errorf("RenderVisualReport nil: expected visual report header, got %q", got)
+	}
+	if !strings.Contains(got, "데이터 없음") {
+		t.Errorf("RenderVisualReport nil: expected empty-data message, got %q", got)
+	}
+}
+
+func TestRenderVisualReport_WithData(t *testing.T) {
+	data := &views.WorklogData{
+		Sessions: []views.Session{
+			{ID: "s1", StartedAt: "2026-05-20T10:00:00Z", Mode: "solo"},
+		},
+		Turns: []views.Turn{
+			{ID: "t1", SessionID: "s1", SequenceNo: 1, StartedAt: "2026-05-20T10:00:00Z",
+				Status:   "complete",
+				DoneWhen: sql.NullString{String: "테스트 통과", Valid: true}},
+			{ID: "t2", SessionID: "s1", SequenceNo: 2, StartedAt: "2026-05-20T10:05:00Z",
+				Status:   "active",
+				DoneWhen: sql.NullString{String: "검증 완료", Valid: true},
+				Lane:     sql.NullString{String: "worker-a", Valid: true}},
+		},
+		Entries: []views.Entry{
+			{ID: "e1", SessionID: "s1", Kind: "entry", Title: "항목", CreatedAt: "2026-05-20T10:01:00Z"},
+			{ID: "e2", SessionID: "s1", Kind: "decision", Title: "결정", CreatedAt: "2026-05-20T10:02:00Z"},
+			{ID: "e3", SessionID: "s1", Kind: "evidence", Title: "근거", CreatedAt: "2026-05-20T10:03:00Z"},
+			{ID: "e4", SessionID: "s1", Kind: "blocker", Title: "블로커", CreatedAt: "2026-05-20T10:04:00Z"},
+		},
+		Blockers: []views.Blocker{
+			{ID: "b1", Title: "열림", OpenedAt: "2026-05-20T10:04:00Z", Status: "open"},
+			{ID: "b2", Title: "해결", OpenedAt: "2026-05-20T10:06:00Z", Status: "resolved"},
+		},
+		DecisionEvidenceLinks: []views.DecisionEvidenceLink{
+			{DecisionEntryID: "e2", EvidenceEntryID: "e3"},
+		},
+	}
+	got := views.RenderVisualReport(data)
+	for _, want := range []string{
+		"리포트 시각화",
+		"실선(=)",
+		"목표 레일",
+		"턴 완료",
+		"[============............]",
+		"결정 근거",
+		"[========================]",
+		"블로커 소거",
+		"엔트리 믹스",
+		"entry",
+		"decision",
+		"evidence",
+		"blocker",
+		"Lane 스택",
+		"worker-a",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("RenderVisualReport: missing %q in:\n%s", want, got)
+		}
+	}
+}
+
 // ── LoadAll / SeqSum (require a live in-memory DB) ────────────────────────
 
 func TestLoadAll_EmptyDB(t *testing.T) {

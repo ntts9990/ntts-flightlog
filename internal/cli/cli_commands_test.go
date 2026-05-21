@@ -818,7 +818,7 @@ func TestDoctorCmd(t *testing.T) {
 // TestViewCmd_AllModes exercises all one-shot view modes.
 func TestViewCmd_AllModes(t *testing.T) {
 	setupEnv(t)
-	for _, mode := range []string{"flat", "turns", "decisions", "blockers", "report"} {
+	for _, mode := range []string{"flat", "turns", "decisions", "blockers", "report", "visual"} {
 		t.Run(mode, func(t *testing.T) {
 			setupEnv(t) // fresh dir per subtest
 			execRunE(t, newViewCmd(), false, mode)

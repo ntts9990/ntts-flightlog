@@ -2,7 +2,7 @@
 //
 // Architecture:
 //   - Model holds a bubbles/viewport for scrollable ANSI content.
-//   - 5 views: flat (1), turns (2), decisions (3), blockers (4), report (5).
+//   - 6 views: flat (1), turns (2), decisions (3), blockers (4), report (5), visual (6).
 //   - Menu header pins to the top; viewport fills remaining terminal height.
 //   - Data source: SQLite via internal/db — NOT main.md file mtime polling (plan B1).
 //   - Change detection: 2-second tick polls SeqSum (entry+turn+session row counts).
@@ -24,7 +24,7 @@ import (
 	"github.com/ntts9990/ntts-flightlog/internal/tui/views"
 )
 
-// viewID identifies one of the 5 TUI views.
+// viewID identifies one of the TUI views.
 type viewID int
 
 const (
@@ -33,6 +33,7 @@ const (
 	viewDecisions                   // 3 = decisions only
 	viewBlockers                    // 4 = blockers only
 	viewReport                      // 5 = operational report
+	viewVisual                      // 6 = ASCII visual report
 )
 
 // headerHeight is the number of lines consumed by the pinned menu (line + blank).
@@ -124,6 +125,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m = m.switchView(viewBlockers)
 		case "5":
 			m = m.switchView(viewReport)
+		case "6":
+			m = m.switchView(viewVisual)
 		case "r", "ㄱ":
 			cmds = append(cmds, cmdLoad(m.d))
 		case "q", "ㅂ", "ctrl+c":
@@ -213,6 +216,7 @@ func (m Model) menuHeader() string {
 		{"3", "decisions", viewDecisions},
 		{"4", "blockers", viewBlockers},
 		{"5", "report", viewReport},
+		{"6", "visual", viewVisual},
 	}
 
 	header := ""
@@ -245,6 +249,8 @@ func (m Model) currentContent() string {
 		return views.RenderBlockers(m.data)
 	case viewReport:
 		return views.RenderReport(m.data)
+	case viewVisual:
+		return views.RenderVisualReport(m.data)
 	default:
 		return views.RenderFlat(m.data, m.turnsDir)
 	}
@@ -301,7 +307,7 @@ func Run(d *db.DB, turnsDir string) error {
 
 // RenderView renders a single named view to a string without starting the TUI.
 // Used by --noninteractive mode and the B2 byte-equality test.
-// viewName: "flat" | "turns" | "decisions" | "blockers" | "report"
+// viewName: "flat" | "turns" | "decisions" | "blockers" | "report" | "visual"
 func RenderView(data *views.WorklogData, viewName, turnsDir string) string {
 	absTurns, _ := filepath.Abs(turnsDir)
 	switch viewName {
@@ -313,6 +319,8 @@ func RenderView(data *views.WorklogData, viewName, turnsDir string) string {
 		return views.RenderBlockers(data)
 	case "report":
 		return views.RenderReport(data)
+	case "visual":
+		return views.RenderVisualReport(data)
 	default: // "flat" or anything else
 		return views.RenderFlat(data, absTurns)
 	}

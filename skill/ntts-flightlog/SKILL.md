@@ -24,7 +24,7 @@ For future revisions, see `references/design-rationale.md`.
 
 - Repo-local flightlog: `.ntts-flightlog/main.md` (falls back to `.omx/worklog/main.md` if that directory already exists, for backward compatibility)
 - Per-turn worklog files at `.ntts-flightlog/turns/turn-{N}.md` — every entry inside a turn is mirrored here so each main task has its own scannable history
-- Live tmux side pane viewer with a top menu bar: `[1] flat  [2] turns  [3] decisions  [4] blockers  [5] report  [r] reload  [q] quit`
+- Live tmux side pane viewer with a top menu bar: `[1] flat  [2] turns  [3] decisions  [4] blockers  [5] report  [6] visual  [r] reload  [q] quit`
 - OSC 8 hyperlinks on turn-start titles — cmd/ctrl-click in iTerm2 / WezTerm / Kitty / Ghostty / VS Code terminal opens the per-turn markdown file in the OS default app
 - Simple append/update commands for milestones, decisions, blockers, verification, and next steps
 - Turn tracking with start/end timestamps and elapsed time
@@ -110,7 +110,7 @@ If the CLI is not on PATH, call the skill script directly. It will delegate to `
 
 - `ntts-flightlog path` — absolute path of the main worklog file.
 - `ntts-flightlog turn-path [N]` — absolute path of turn N (or the most recent turn). Useful in scripts: `code "$(ntts-flightlog turn-path 3)"`.
-- `ntts-flightlog view <flat|turns|decisions|blockers|report>` — one-shot ANSI render of the current state. The tmux side pane uses the same renderer behind the menu keys.
+- `ntts-flightlog view <flat|turns|decisions|blockers|report|visual>` — one-shot ANSI render of the current state. The tmux side pane uses the same renderer behind the menu keys.
 - `ntts-flightlog attention [--format text|json]` — action queue for what needs operator attention before continuing.
 - `ntts-flightlog handoff [--format text|md|json]` — compact summary to paste into a new agent/session before continuing work.
 - `ntts-flightlog share --window week --format md` — portable status report for PRs, issues, email, or Phase E team-share evidence.

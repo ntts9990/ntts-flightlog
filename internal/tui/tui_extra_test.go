@@ -99,7 +99,7 @@ func TestRenderView_AllViews(t *testing.T) {
 			{ID: "s1", StartedAt: "2026-05-20T10:00:00Z", Mode: "solo"},
 		},
 	}
-	viewNames := []string{"flat", "turns", "decisions", "blockers", "report", "other"}
+	viewNames := []string{"flat", "turns", "decisions", "blockers", "report", "visual", "other"}
 	for _, name := range viewNames {
 		out := RenderView(data, name, "/tmp/turns")
 		if out == "" {
@@ -109,7 +109,7 @@ func TestRenderView_AllViews(t *testing.T) {
 }
 
 func TestRenderView_NilData_AllViews(t *testing.T) {
-	for _, name := range []string{"flat", "turns", "decisions", "blockers", "report"} {
+	for _, name := range []string{"flat", "turns", "decisions", "blockers", "report", "visual"} {
 		out := RenderView(nil, name, "/tmp/turns")
 		if out == "" {
 			t.Errorf("RenderView nil data (%q): returned empty string", name)
