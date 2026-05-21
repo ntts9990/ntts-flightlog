@@ -3,6 +3,7 @@ package views
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 // RenderBlockers returns an open-risk board. It prioritizes blocker state rows
@@ -78,6 +79,9 @@ func writeBlockerRow(sb *strings.Builder, b Blocker, entryByID map[string]Entry,
 	if b.ClosedAt.Valid && b.ClosedAt.String != "" {
 		fmt.Fprintf(sb, "%s  해결: %s%s\n", Dim, b.ClosedAt.String, Reset)
 	}
+	if age := blockerAgeLine(b); age != "" {
+		fmt.Fprintf(sb, "%s  %s%s\n", Dim, age, Reset)
+	}
 	if b.ResolutionNote.Valid && b.ResolutionNote.String != "" {
 		fmt.Fprintf(sb, "%s  해결내용: %s%s\n", Dim, b.ResolutionNote.String, Reset)
 	}
@@ -109,4 +113,33 @@ func writeTurnContext(sb *strings.Builder, turnID string, turnByID map[string]Tu
 		title = t.Title.String
 	}
 	fmt.Fprintf(sb, "%s  turn-%d: %s%s\n", Dim, t.SequenceNo, title, Reset)
+}
+
+func blockerAgeLine(b Blocker) string {
+	seconds := b.AccumulatedSeconds
+	if seconds <= 0 {
+		seconds = blockerDurationSeconds(b)
+	}
+	if seconds < 0 {
+		seconds = 0
+	}
+	if b.Status == "resolved" || b.Status == "closed" || (b.ClosedAt.Valid && b.ClosedAt.String != "") {
+		return "총 차단: " + formatDurationMS(seconds*1000)
+	}
+	return "열린 시간: " + formatDurationMS(seconds*1000)
+}
+
+func blockerDurationSeconds(b Blocker) int64 {
+	opened, err := time.Parse("2006-01-02T15:04:05Z", b.OpenedAt)
+	if err != nil {
+		return 0
+	}
+	if b.ClosedAt.Valid && b.ClosedAt.String != "" {
+		closed, err := time.Parse("2006-01-02T15:04:05Z", b.ClosedAt.String)
+		if err != nil {
+			return 0
+		}
+		return int64(closed.Sub(opened).Seconds())
+	}
+	return int64(time.Since(opened).Seconds())
 }

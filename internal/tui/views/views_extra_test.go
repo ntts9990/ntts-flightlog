@@ -339,13 +339,16 @@ func TestRenderBlockers_WithStateRows(t *testing.T) {
 		Blockers: []views.Blocker{
 			{ID: "b1", EntryID: sql.NullString{String: "e1", Valid: true},
 				TurnID: sql.NullString{String: "t1", Valid: true},
-				Title:  "열린 블로커", OpenedAt: "2026-05-20T10:01:00Z", Status: "open"},
+				Title:  "열린 블로커", OpenedAt: "2026-05-20T10:01:00Z", Status: "open",
+				AccumulatedSeconds: 120},
 			{ID: "b2", Title: "해결 블로커", OpenedAt: "2026-05-20T10:02:00Z",
-				ClosedAt: sql.NullString{String: "2026-05-20T10:03:00Z", Valid: true}, Status: "resolved"},
+				ClosedAt:           sql.NullString{String: "2026-05-20T10:03:00Z", Valid: true},
+				Status:             "resolved",
+				AccumulatedSeconds: 60},
 		},
 	}
 	got := views.RenderBlockers(data)
-	for _, want := range []string{"열림", "해결됨", "열린 블로커", "해결 블로커", "turn-1", "상세 원인"} {
+	for _, want := range []string{"열림", "해결됨", "열린 블로커", "해결 블로커", "turn-1", "상세 원인", "열린 시간: 2m 00s", "총 차단: 1m 00s"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("RenderBlockers state rows: missing %q in:\n%s", want, got)
 		}
