@@ -107,7 +107,7 @@ attached now
 
 Current attached surfaces:
 
-- `ntts-flightlog view flat|turns|decisions|blockers|report`
+- `ntts-flightlog view flat|turns|decisions|blockers|report|visual`
 - `ntts-flightlog handoff --format text|md|json`
 - `ntts-flightlog attention --format text|json`
 - `ntts-flightlog share --window day|week|all --format md|json`

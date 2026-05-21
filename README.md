@@ -19,7 +19,7 @@ Runtime dependencies for the CLI are bundled in the Go binary. The live side pan
 ## Preview
 
 ```text
-[1]평면 [2]턴별 [3]결정 [4]블로커 [5]리포트
+[1]평면 [2]턴별 [3]결정 [4]블로커 [5]리포트 [6]시각화
 [r]새로고침 [q]종료
 ----------------------------------------
 # 작업 기록
@@ -123,7 +123,7 @@ ntts-flightlog refresh-anchor [turn_id]
 ntts-flightlog drift-check [turn_id]
 ntts-flightlog path                                  # absolute path of main worklog file
 ntts-flightlog turn-path [N]                         # absolute path of turn N (default: latest)
-ntts-flightlog view <flat|turns|decisions|blockers|report|tui>
+ntts-flightlog view <flat|turns|decisions|blockers|report|visual|tui>
 ntts-flightlog migrate
 ntts-flightlog self-upgrade
 ```
@@ -167,10 +167,10 @@ warnings. Add `--format json` for a stable machine-readable schema.
 
 Each `turn-start` creates `.ntts-flightlog/turns/turn-{N}.md` and mirrors every subsequent `entry`/`decision`/`evidence`/`blocker`/`turn-end` into it. That gives every main task its own scannable history alongside the flat main log.
 
-Inside the tmux pane, the top bar is a 2-line menu — press `1`–`5` to switch views, `r` to reload, `q` to quit:
+Inside the tmux pane, the top bar is a 2-line menu — press `1`–`6` to switch views, `r` to reload, `q` to quit:
 
 ```text
-[1]평면 [2]턴별 [3]결정 [4]블로커 [5]리포트
+[1]평면 [2]턴별 [3]결정 [4]블로커 [5]리포트 [6]시각화
 [r]새로고침 [q]종료
 ```
 
@@ -179,6 +179,7 @@ Inside the tmux pane, the top bar is a 2-line menu — press `1`–`5` to switch
 - `3` decisions — ADR-lite decision log with turn context and linked/same-turn evidence counts.
 - `4` blockers — open-risk board with open blockers first and resolved blockers below.
 - `5` report — operational summary of work volume, attention items, turn progress, decision evidence coverage, and blocker state.
+- `6` visual — compact ASCII progress bars for turn completion, decision evidence, blocker resolution, entry mix, and lane distribution.
 
 `evidence --link` accepts either a decision entry ID or a unique decision title
 fragment. Ambiguous matches fail instead of guessing. `blocker-resolve` accepts a

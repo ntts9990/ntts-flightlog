@@ -118,7 +118,7 @@ If the CLI is not on PATH, call the skill script directly. It will delegate to `
 - `ntts-flightlog hooks print --agent codex` — copyable hook starter command for opt-in ingest.
 - `ntts-flightlog evidence-check --strict` — GA-blocking readiness check for Phase E evidence.
 - `ntts-flightlog doctor` — local preflight for binary path/version, DB migrations, pane liveness, and installed skill wrapper delegation.
-- Inside the pane, press `1`–`5` to switch views, `r` to reload, `q` to quit. Click a turn title with cmd/ctrl held to open the per-turn file (terminal must support OSC 8 hyperlinks).
+- Inside the pane, press `1`–`6` to switch views, `r` to reload, `q` to quit. Click a turn title with cmd/ctrl held to open the per-turn file (terminal must support OSC 8 hyperlinks).
 
 ## Good Use
 
