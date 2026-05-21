@@ -30,13 +30,14 @@ Current implementation status:
   blockers, metrics, agent attribution, turn anchors, lane ownership, and
   redacted agent event audit records.
 - Latest product work adds bounded hook/event ingest with redaction,
-  deduplication, and reviewable evidence/blocker candidate promotion.
+  deduplication, hook starter kits, and reviewable evidence/blocker candidate
+  promotion.
 - Product direction has been clarified around the local-first terminal sidecar
   wedge.
-- The next implementation sequence is bounded hook/event ingest, hook starter
-  kits, evidence automation, and then richer agent comparison. Storage/redaction
-  policy, the first lane/team tracking slice, and bounded ingest are now
-  implemented.
+- The next implementation sequence is hook starter kit hardening, richer
+  evidence automation, and then richer agent comparison. Storage/redaction
+  policy, the first lane/team tracking slice, bounded ingest, hook starter kit
+  output, and evidence-check/report wrappers are now implemented.
 
 ## 2. Developer Goal
 
@@ -194,6 +195,9 @@ Current user-facing commands include:
 - `attention`
 - `share`
 - `ingest`
+- `hooks`
+- `evidence-check`
+- `evidence-report`
 - `report`
 - `agent-stats`
 - `doctor`
@@ -346,10 +350,10 @@ Current roadmap from `docs/user-investor-question-decisions.md`:
 
 ```text
 done:
-  handoff -> attention -> share -> storage/redaction policy -> first lane tracking slice -> bounded ingest
+  handoff -> attention -> share -> storage/redaction policy -> first lane tracking slice -> bounded ingest -> hook starter kits -> evidence automation wrappers
 
 next:
-  hook starter kits -> evidence automation -> richer agent comparison
+  hook starter kit hardening -> richer agent comparison
 
 later:
   richer agent comparison
@@ -364,13 +368,12 @@ not now:
 
 Immediate product sequence:
 
-1. Commit and publish the bounded ingest slice.
+1. Commit and publish hook starter kits plus evidence automation wrappers.
 2. Use `docs/storage-redaction-policy.md` as the safety boundary for future
    hook starter kits and any expansion of ingest payload fields.
 3. Extend lane/team tracking only where richer parallel ownership is needed.
-4. Add hook starter kits as opt-in printed snippets and diagnostics.
-5. Add evidence automation wrappers.
-6. Extend agent comparison after lane and ingest data are trustworthy.
+4. Harden hook starter kits against real Codex/Claude/Gemini hook payloads.
+5. Extend agent comparison after lane and ingest data are trustworthy.
 
 ## 9. Ultragoal And OMX State
 
@@ -413,6 +416,9 @@ Done or attached in the product:
 - `handoff` continuation packet.
 - `attention` action queue.
 - `share` portable team/reviewer status export.
+- `ingest` bounded redacted hook/event intake.
+- `hooks print` and `hooks doctor` for opt-in starter kits without config mutation.
+- `evidence-check` and `evidence-report` read-only Phase E readiness wrappers.
 - Storage and redaction policy for future automated hook payloads.
 - First lane/team tracking slice with `--lane`, lane-specific active turns,
   `parent_turn_id`, and lane labels in structured outputs.
@@ -423,9 +429,9 @@ Done or attached in the product:
 
 Not done or not yet attached:
 
-- Generic hook/event ingest.
-- Hook starter kits.
-- `evidence-check` and `evidence-report` commands.
+- Real installed hook integrations across Codex, Claude Code, and Gemini.
+- Hook starter kits tuned for each agent's native hook payload shape.
+- Richer evidence automation beyond Phase E readiness wrappers.
 - Richer agent comparison based on lane-aware data.
 - Real four-week Phase E evidence.
 - External recipient acknowledgement for team-share evidence.

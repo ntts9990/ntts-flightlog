@@ -29,6 +29,9 @@ ntts-flightlog handoff --format json
 ntts-flightlog report --format json --window week
 ntts-flightlog agent-stats --format json --window week
 ntts-flightlog ingest --source codex --event test.finished < event.json
+ntts-flightlog hooks doctor --format json
+ntts-flightlog evidence-check --format json
+ntts-flightlog evidence-report --persona team-share --format json
 ```
 
 All commands are closed-network by default. They read local `.ntts-flightlog/`
@@ -43,6 +46,9 @@ state and write to stdout. They require no API keys or hosted services.
 | Handoff JSON | `ntts-flightlog handoff --format json` | `handoff.v1` | Stable | Continuation context |
 | Report JSON | `ntts-flightlog report --format json` | `report.v1` | Stable | Operational metrics summary |
 | Ingest JSON response | `ntts-flightlog ingest --source <agent> --event <name>` | `ingest.v0` | Beta | Redacted hook/event audit intake |
+| Hooks doctor JSON | `ntts-flightlog hooks doctor --format json` | `hooks-doctor.v0` | Beta | Hook setup preflight |
+| Evidence check JSON | `ntts-flightlog evidence-check --format json` | `evidence-check.v0` | Beta | Phase E readiness gate |
+| Evidence report JSON | `ntts-flightlog evidence-report --persona <persona> --format json` | `evidence-report.v0` | Beta | Persona-specific evidence gap report |
 | Golden attention fixture | `testdata/golden/attention_schema.json` | `attention.v1` | Stable | Adapter fixture and schema example |
 | Runtime state | `.ntts-flightlog/` | `runtime-state.v1` | Generated | SQLite, markdown, turn files, pane metadata |
 
@@ -146,6 +152,16 @@ Fields safe to rely on during beta:
 - `promoted_entry_id`
 - `redaction_version`
 - `dropped_field_count`
+
+## Beta: Hooks And Evidence Automation
+
+`hooks print` is intentionally text-only and copyable; it must not mutate
+global agent config. `hooks doctor --format json` can be used to confirm local
+binary, worklog, and ingest smoke readiness.
+
+`evidence-check --format json` and `evidence-report --format json` expose Phase
+E readiness and persona-specific evidence gaps. They are read-only and must not
+generate fake evidence.
 
 ## Experimental Fields
 

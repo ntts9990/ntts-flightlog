@@ -18,8 +18,11 @@ Available Commands:
   drift-check        현재 턴 항목이 제약 조건과 일치하는지 확인합니다
   entry              작업 기록을 추가합니다
   evidence           근거/증거를 기록합니다
+  evidence-check     Phase E evidence readiness를 점검합니다
+  evidence-report    persona별 evidence report를 출력합니다
   handoff            새 에이전트에게 넘길 현재 작업 요약을 출력합니다
   help               Help about any command
+  hooks              agent hook starter kit을 출력하고 점검합니다
   ingest             redacted hook/event JSON을 기록합니다
   migrate            데이터베이스 스키마 마이그레이션을 실행합니다
   mode               현재 작업 모드를 설정합니다

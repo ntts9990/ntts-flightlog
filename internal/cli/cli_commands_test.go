@@ -10,6 +10,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -288,6 +289,169 @@ func TestIngestCmd_InvalidJSONDoesNotLeakPayload(t *testing.T) {
 	}
 	if strings.Contains(err.Error(), "sk-secret") || strings.Contains(err.Error(), "OPENAI_API_KEY") {
 		t.Fatalf("invalid JSON error leaked payload: %v", err)
+	}
+}
+
+func TestHooksPrintCmd_DoesNotMutateConfig(t *testing.T) {
+	setupEnv(t)
+	cmd := newHooksPrintCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Flags().Set("agent", "codex"); err != nil {
+		t.Fatalf("set agent: %v", err)
+	}
+	execRunE(t, cmd, false)
+	got := out.String()
+	for _, want := range []string{"Codex hook starter kit", "ingest --source codex", "Dropped by ingest"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("hooks print missing %q in:\n%s", want, got)
+		}
+	}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	if _, err := os.Stat(filepath.Join(home, ".codex")); !os.IsNotExist(err) {
+		t.Fatalf("hooks print should not mutate config, stat err=%v", err)
+	}
+}
+
+func TestHooksPrintCmd_RejectsUnknownAgent(t *testing.T) {
+	setupEnv(t)
+	cmd := newHooksPrintCmd()
+	if err := cmd.Flags().Set("agent", "unknown"); err != nil {
+		t.Fatalf("set agent: %v", err)
+	}
+	execRunE(t, cmd, true)
+}
+
+func TestEvidenceCheckCmd_JSONAdvisory(t *testing.T) {
+	root := t.TempDir()
+	writeEvidenceFixture(t, root)
+	cmd := newEvidenceCheckCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Flags().Set("root", root); err != nil {
+		t.Fatalf("set root: %v", err)
+	}
+	if err := cmd.Flags().Set("format", "json"); err != nil {
+		t.Fatalf("set format: %v", err)
+	}
+	execRunE(t, cmd, false)
+
+	var got struct {
+		OK      bool `json:"ok"`
+		Summary struct {
+			PlaceholderCount int `json:"placeholder_count"`
+		} `json:"summary"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("decode evidence-check json: %v\n%s", err, out.String())
+	}
+	if !got.OK || got.Summary.PlaceholderCount != 0 {
+		t.Fatalf("unexpected evidence-check result: %#v", got)
+	}
+}
+
+func TestEvidenceCheckCmd_StrictFailsOnPlaceholders(t *testing.T) {
+	root := t.TempDir()
+	writeEvidenceFixture(t, root)
+	if err := os.WriteFile(filepath.Join(root, "docs", "v2-ga-acceptance-evidence.md"), []byte("# v2 GA Acceptance Evidence\n\n## Self-Retro\n\n- turn_duration: TODO quote\n\n## Agent-Operator\n\n- turn_duration: TODO quote\n\n## Team-Share\n\n- turn_duration: TODO quote\n"), 0o644); err != nil {
+		t.Fatalf("write placeholder evidence: %v", err)
+	}
+	cmd := newEvidenceCheckCmd()
+	if err := cmd.Flags().Set("root", root); err != nil {
+		t.Fatalf("set root: %v", err)
+	}
+	if err := cmd.Flags().Set("strict", "true"); err != nil {
+		t.Fatalf("set strict: %v", err)
+	}
+	execRunE(t, cmd, true)
+}
+
+func TestEvidenceReportCmd_CitesPlaceholdersAndNextAction(t *testing.T) {
+	root := t.TempDir()
+	writeEvidenceFixture(t, root)
+	if err := os.WriteFile(filepath.Join(root, "docs", "v2-ga-acceptance-evidence.md"), []byte("# v2 GA Acceptance Evidence\n\n## Team-Share\n\n- turn_duration / turn 소요시간: TODO quote.\n- blocker_accumulation / blocker 누적시간: 2 blockers.\n- agent_completion / agent 완료율: 90%.\n- agent_blocker_freq / agent blocker 빈도: 0.1.\n"), 0o644); err != nil {
+		t.Fatalf("write evidence doc: %v", err)
+	}
+	cmd := newEvidenceReportCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Flags().Set("root", root); err != nil {
+		t.Fatalf("set root: %v", err)
+	}
+	if err := cmd.Flags().Set("persona", "team-share"); err != nil {
+		t.Fatalf("set persona: %v", err)
+	}
+	execRunE(t, cmd, false)
+	got := out.String()
+	for _, want := range []string{"persona: team-share", "TODO quote", "evidence_bound_decisions"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("evidence-report missing %q in:\n%s", want, got)
+		}
+	}
+}
+
+func writeEvidenceFixture(t *testing.T, root string) {
+	t.Helper()
+	for _, dir := range []string{"docs", filepath.Join(".omc", "specs")} {
+		if err := os.MkdirAll(filepath.Join(root, dir), 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", dir, err)
+		}
+	}
+	evidenceDoc := `# v2 GA Acceptance Evidence
+
+## Self-Retro
+
+- turn_duration / turn 소요시간: 10m.
+- blocker_accumulation / blocker 누적시간: 0.
+- agent_completion / agent 완료율: 100%.
+- agent_blocker_freq / agent blocker 빈도: 0.
+- evidence_bound_decisions / evidence-bound decision: 4/4.
+- Behavior change: [CHANGED-BY-METRIC: turn_duration]
+
+## Agent-Operator
+
+- turn_duration / turn 소요시간: 10m.
+- blocker_accumulation / blocker 누적시간: 0.
+- agent_completion / agent 완료율: 100%.
+- agent_blocker_freq / agent blocker 빈도: 0.
+- evidence_bound_decisions / evidence-bound decision: 4/4.
+- Adversarial review: linked.
+
+## Team-Share
+
+- turn_duration / turn 소요시간: 10m.
+- blocker_accumulation / blocker 누적시간: 0.
+- agent_completion / agent 완료율: 100%.
+- agent_blocker_freq / agent blocker 빈도: 0.
+- evidence_bound_decisions / evidence-bound decision: 4/4.
+- External recipient ack: acknowledged.
+`
+	files := map[string]string{
+		"docs/v2-ga-acceptance-evidence.md":         evidenceDoc,
+		"docs/phase-e-persona-recruitment.md":       "# recruitment\n",
+		"docs/adversarial-review-framework.md":      "# adversarial review\n",
+		"docs/e0-3-agent-tmux-sanity.md":            "| agent | status |\n| `claude` | pass |\n| `codex` | pass |\n| `gemini` | pass |\n",
+		".omc/specs/v2-agent-operator-decisions.md": "# agent operator\n",
+		".omc/specs/v2-team-share-report.md":        "# team share\n",
+		".omc/specs/v2-adversarial-review.md":       "# adversarial review\n",
+	}
+	var alpha strings.Builder
+	for i := 1; i <= 12; i++ {
+		fmt.Fprintf(&alpha, "### 2026-05-%02d entry\n", i)
+		if i == 1 {
+			alpha.WriteString("[CHANGED-BY-METRIC: turn_duration]\n")
+		}
+	}
+	files[".omc/specs/alpha-dogfood-log.md"] = alpha.String()
+	for path, body := range files {
+		full := filepath.Join(root, path)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", filepath.Dir(full), err)
+		}
+		if err := os.WriteFile(full, []byte(body), 0o644); err != nil {
+			t.Fatalf("write %s: %v", path, err)
+		}
 	}
 }
 

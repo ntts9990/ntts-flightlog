@@ -106,9 +106,13 @@ ntts-flightlog turn-end [summary]
 ntts-flightlog entry <title> [detail]
 ntts-flightlog decision <title> [detail]
 ntts-flightlog evidence <title> [detail] [--link decision-id-or-title]
+ntts-flightlog evidence-check [--strict] [--format text|json]
+ntts-flightlog evidence-report --persona self-retro|agent-operator|team-share [--format text|json]
 ntts-flightlog blocker <title> [detail]
 ntts-flightlog blocker-resolve <id-or-title> [resolution]
 ntts-flightlog ingest --source <agent> --event <name> < event.json
+ntts-flightlog hooks print --agent codex|claude|gemini
+ntts-flightlog hooks doctor [--agent codex|claude|gemini] [--format text|json]
 ntts-flightlog handoff [--format text|md|json]
 ntts-flightlog attention [--format text|json] [--window day|week|all] [--agent name]
 ntts-flightlog share [--format md|json] [--window day|week|all]
@@ -132,6 +136,15 @@ are logging in parallel. Each lane keeps its own active turn pointer so
 stores only bounded audit fields in `agent_events`, deduplicates by
 `dedupe_key`, and promotes test-pass/test-fail events into reviewable
 evidence/blocker candidates.
+
+`hooks print` emits copyable hook starter commands only; it never mutates global
+agent config. `hooks doctor` checks that the local binary, worklog directory,
+and redacted ingest path are reachable.
+
+`evidence-check` is the read-only Phase E readiness gate. Advisory mode reports
+missing artifacts and placeholders; `--strict` returns non-zero while GA evidence
+is incomplete. `evidence-report` prints the concrete persona-specific gap and
+next action.
 
 ## Metrics
 
@@ -240,6 +253,8 @@ For Phase E evidence readiness:
 ```bash
 scripts/phase_e_readiness.sh          # advisory while evidence is being collected
 scripts/phase_e_readiness.sh --strict # GA-blocking readiness check
+ntts-flightlog evidence-check --strict
+ntts-flightlog evidence-report --persona team-share
 ```
 
 ## Privacy and Scope

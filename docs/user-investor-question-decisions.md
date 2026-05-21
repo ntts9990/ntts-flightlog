@@ -66,25 +66,25 @@ REJECT     does not fit the product boundary now
 | User | Can I recover after compaction, restart, or switching agents? | ATTACHED | Keep `handoff` as a first-class context packet. |
 | User | Can it tell me what needs attention instead of only showing metrics? | ATTACHED | Keep `attention` and the report view's `주의 필요` section. |
 | User | Can I share status with a teammate or reviewer? | ATTACHED | Keep `share --format md|json` as the portable status artifact. |
-| User | Can it track subagents and team workers? | NEXT | Add explicit lane/team tracking instead of relying only on one global active turn. |
-| User | Can it log automatically so agents do not forget? | NEXT | Add bounded hook/event ingest and hook starter kits. |
-| User | Can it avoid leaking secrets from automated hooks? | NEXT | Add redaction before storing hook payloads or summaries. |
+| User | Can it track subagents and team workers? | ATTACHED | Keep explicit lane/team tracking instead of relying only on one global active turn. |
+| User | Can it log automatically so agents do not forget? | ATTACHED | Keep bounded hook/event ingest and opt-in hook starter kits. |
+| User | Can it avoid leaking secrets from automated hooks? | ATTACHED | Redact before storing hook payload summaries and do not retain raw payloads by default. |
 | User | Can it show every tool call and file read? | REJECT | Do not show raw traces by default. Store bounded events only when they improve orientation. |
 | User | Can it work without tmux? | ATTACHED | Keep CLI/markdown/SQLite behavior independent of pane rendering. |
 | Manager | Can I tell whether work is actually progressing? | ATTACHED | Use turns, outcomes, blockers, attention, and share summaries. |
 | Manager | Can I see decisions and the evidence behind them? | ATTACHED | Keep decision/evidence links and evidence-bound decision metrics. |
-| Manager | Can I compare agents or workers? | LATER | Extend `agent-stats` after lane tracking exists; avoid premature scorecards. |
+| Manager | Can I compare agents or workers? | LATER | Extend `agent-stats` after lane and ingest coverage are proven; avoid premature scorecards. |
 | Manager | Can I generate a weekly status report? | ATTACHED | Use `share --window week --format md`. |
-| Manager | Can I enforce evidence before GA? | NEXT | Add `evidence-check` / `evidence-report` wrappers over Phase E scripts and docs. |
+| Manager | Can I enforce evidence before GA? | ATTACHED | Use `evidence-check` / `evidence-report` wrappers over Phase E readiness rules. |
 | Investor | What is the wedge? | ATTACHED | The wedge is live terminal-side human control during long-running agent work. |
 | Investor | Why not Langfuse or LangSmith? | ATTACHED | They trace LLM apps; this orients a human operating coding agents locally. |
 | Investor | Why not AgentLogs or raw transcript search? | ATTACHED | Those preserve transcripts; this distills decisions, blockers, evidence, and next actions. |
-| Investor | Is there network effect or team value? | NEXT | Team-share and lane tracking create portable evidence artifacts without requiring a cloud account. |
+| Investor | Is there network effect or team value? | ATTACHED | Team-share, lane tracking, and evidence reports create portable artifacts without requiring a cloud account. |
 | Investor | Is this a cloud SaaS? | REJECT | Not now. Local-first is the trust boundary and differentiator. |
 | Investor | Will it open PRs and run agents? | REJECT | The product monitors and disciplines agents; it should not become the agent runner. |
 | Investor | Can this become a category? | LATER | Category proof depends on Phase E evidence that metrics change operator behavior. |
 | Buyer | Can this run in private repos without sending data out? | ATTACHED | Repo-local SQLite + markdown remains a core constraint. |
-| Buyer | Can security teams audit what it stores? | NEXT | Document storage, redaction, and hook payload policy before deeper ingest. |
+| Buyer | Can security teams audit what it stores? | ATTACHED | Storage, redaction, hook payload, and LLM prompting policies document the trust boundary. |
 
 ## What We Have Attached Already
 
@@ -100,6 +100,9 @@ attached now
         +-- handoff packet
         +-- share export
         +-- doctor/preflight
+        +-- redacted ingest
+        +-- hook starter kits
+        +-- evidence-check/report
 ```
 
 Current attached surfaces:
@@ -109,12 +112,17 @@ Current attached surfaces:
 - `ntts-flightlog attention --format text|json`
 - `ntts-flightlog share --window day|week|all --format md|json`
 - `ntts-flightlog --lane <name> turn-start|entry|decision|evidence|blocker|turn-end`
+- `ntts-flightlog ingest --source codex|claude|gemini|generic --event <name>`
+- `ntts-flightlog hooks print --agent codex|claude|gemini`
+- `ntts-flightlog hooks doctor`
+- `ntts-flightlog evidence-check`
+- `ntts-flightlog evidence-report --persona self-retro|agent-operator|team-share`
 - `ntts-flightlog agent-stats`
 - `ntts-flightlog doctor`
 
 ## What We Should Attach Next
 
-These NEXT items are ordered by dependency, not just desirability:
+The original dependency chain has now landed through first slices:
 
 ```text
 storage/redaction policy
@@ -132,14 +140,14 @@ hook starter kits
 evidence automation wrappers
 ```
 
-Storage and redaction policy is a prerequisite gate for any automated ingest.
-Hook/event work must not store raw payloads first and defer redaction.
-Lane attribution should land before agent comparison or team scorecards, because
-the data is not trustworthy until parallel work has explicit ownership.
+Next work should harden these slices against real agent payloads and then extend
+agent comparison. Storage and redaction policy remains the gate for any ingest
+expansion; hook/event work must not store raw payloads first and defer
+redaction.
 
 ### 1. Lane / Team Tracking
 
-Decision: NEXT.
+Decision: ATTACHED AS FIRST SLICE.
 
 Reason: users will ask whether subagents and team workers are tracked. Today,
 multiple agents can write to the same worklog, but they share one active
@@ -172,7 +180,7 @@ Do not attach:
 
 ### 2. Generic Hook/Event Ingest
 
-Decision: NEXT.
+Decision: ATTACHED AS FIRST SLICE.
 
 Reason: manual logging depends on agent discipline. Hooks are the right
 integration point, but raw trace capture would dilute the product.
@@ -190,7 +198,7 @@ Attach:
   - permission denied -> blocker candidate
   - compaction/stop -> handoff reminder
 
-Prerequisite gate:
+Implemented gate:
 
 - `docs/storage-redaction-policy.md` or equivalent must define stored fields,
   dropped fields, secret patterns, payload retention, and operator-visible audit
@@ -212,7 +220,7 @@ Do not attach:
 
 ### 3. Hook Starter Kits
 
-Decision: NEXT.
+Decision: ATTACHED AS FIRST SLICE.
 
 Reason: users need automatic capture without editing configs by hand, but the
 tool should not mutate global agent config unexpectedly.
@@ -225,17 +233,18 @@ Attach:
 
 Acceptance criteria:
 
-- `hooks print` writes copyable config only; it does not mutate global agent
+- `hooks print` writes copyable commands only; it does not mutate global agent
   config by default.
 - `hooks doctor` checks whether the printed hook can reach the local binary and
   worklog path.
 - Starter kits document exactly which events are captured and which fields are
   redacted or dropped.
 
-Do not attach yet:
+Still not attached:
 
 - automatic config mutation by default
 - hidden global startup behavior
+- native per-agent payload adapters beyond the minimal bounded event starter
 
 ### 4. Hook/Event Ingest
 
@@ -264,7 +273,7 @@ Still not attached:
 
 ### 5. Evidence Automation
 
-Decision: NEXT.
+Decision: ATTACHED AS FIRST SLICE.
 
 Reason: Phase E strict readiness currently depends on manual artifacts. If the
 product claims evidence-bound behavior, the project should make missing evidence
@@ -274,7 +283,7 @@ Attach:
 
 - `ntts-flightlog evidence-check`
 - `ntts-flightlog evidence-report --persona self-retro|agent-operator|team-share`
-- wrappers around readiness/lint scripts
+- wrappers around Phase E readiness rules
 - next required action per persona/metric
 
 Acceptance criteria:
@@ -292,6 +301,7 @@ Do not attach:
 
 - fake generated evidence
 - relaxing the GA gate to make readiness pass
+- broad evidence generation or model-written evidence
 
 ## What We Should Keep Out For Now
 
@@ -318,10 +328,10 @@ Reasons:
 
 ```text
 done:
-  handoff -> attention -> share -> storage/redaction policy -> first lane tracking slice
+  handoff -> attention -> share -> storage/redaction policy -> first lane tracking slice -> bounded ingest -> hook starter kits -> evidence automation wrappers
 
 next:
-  ingest -> hooks -> evidence automation
+  hook starter kit hardening -> richer agent comparison
 
 later:
   richer agent comparison
@@ -336,10 +346,9 @@ not now:
 
 The practical next implementation sequence is:
 
-1. Generic hook/event ingest
-2. Hook starter kits
-3. Evidence automation
-4. Agent comparison after lane data is trustworthy
+1. Harden hook starter kits with real Codex/Claude/Gemini payload examples
+2. Expand evidence automation only where it stays read-only and source-backed
+3. Extend agent comparison after lane and ingest data are trustworthy
 
 ## Investor-Safe Positioning
 

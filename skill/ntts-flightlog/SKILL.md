@@ -96,8 +96,12 @@ If the CLI is not on PATH, call the skill script directly. It will delegate to `
 - `entry <title> [detail]`: append a timestamped milestone (mirrored to the active turn file).
 - `decision <title> [detail]`: append a decision record (mirrored).
 - `evidence <title> [detail]`: append verification evidence (mirrored).
+- `evidence-check [--strict] [--format text|json]`: read-only Phase E readiness gate; strict mode fails while GA evidence is incomplete.
+- `evidence-report --persona self-retro|agent-operator|team-share [--format text|json]`: show persona-specific evidence coverage, placeholders, and next action.
 - `blocker <title> [detail]`: append a blocker (mirrored).
 - `ingest --source <agent> --event <name> < event.json`: store a redacted hook/event audit record and promote test pass/fail events into reviewable evidence/blocker candidates.
+- `hooks print --agent codex|claude|gemini`: print copyable hook starter commands without mutating global config.
+- `hooks doctor [--agent codex|claude|gemini]`: verify binary/worklog/ingest connectivity for hook setup.
 - `attention [--window day|week|all] [--format text|json]`: print stale blockers, decisions missing evidence, drift, long turns, and agent attribution warnings as recommended actions.
 - `handoff [--format text|md|json]`: print a pasteable session handoff with status, active turn anchors, open blockers, decisions missing evidence, latest evidence, and a recommended next action.
 - `share [--window day|week|all] [--format md|json]`: print a PR/issue/email-ready team status report with completed turns, blockers, decisions/evidence, metric highlights, and requested help.
@@ -111,6 +115,8 @@ If the CLI is not on PATH, call the skill script directly. It will delegate to `
 - `ntts-flightlog handoff [--format text|md|json]` — compact summary to paste into a new agent/session before continuing work.
 - `ntts-flightlog share --window week --format md` — portable status report for PRs, issues, email, or Phase E team-share evidence.
 - `ntts-flightlog ingest --source codex --event test.finished < event.json` — redacted, bounded hook/event intake for evidence/blocker candidate creation.
+- `ntts-flightlog hooks print --agent codex` — copyable hook starter command for opt-in ingest.
+- `ntts-flightlog evidence-check --strict` — GA-blocking readiness check for Phase E evidence.
 - `ntts-flightlog doctor` — local preflight for binary path/version, DB migrations, pane liveness, and installed skill wrapper delegation.
 - Inside the pane, press `1`–`5` to switch views, `r` to reload, `q` to quit. Click a turn title with cmd/ctrl held to open the per-turn file (terminal must support OSC 8 hyperlinks).
 

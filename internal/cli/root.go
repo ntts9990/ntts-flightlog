@@ -54,6 +54,8 @@ func init() {
 		newDecisionCmd(),
 		newDecisionSupersedeCmd(),
 		newEvidenceCmd(),
+		newEvidenceCheckCmd(),
+		newEvidenceReportCmd(),
 		newBlockerCmd(),
 		newBlockerResolveCmd(),
 		newPathCmd(),
@@ -69,6 +71,7 @@ func init() {
 		newRefreshAnchorCmd(),
 		newDriftCheckCmd(),
 		newIngestCmd(),
+		newHooksCmd(),
 		newSelfUpgradeCmd(),
 	)
 }
