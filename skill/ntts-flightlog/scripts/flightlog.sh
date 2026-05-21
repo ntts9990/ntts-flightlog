@@ -560,10 +560,20 @@ draw_once() {
   term_h=\$(tput lines 2>/dev/null || printf 30)
   content_h=\$((term_h - 4))
   [ \$content_h -lt 5 ] && content_h=5
-  WORKLOG_DIR='${abs_worklog_dir}' \\
-  WORKLOG_FILE='${abs_file}' \\
-  TURNS_DIR='${abs_turns_dir}' \\
-  '${abs_script}' view "\$view" 2>/dev/null | tail -n "\$content_h"
+  case "\$view" in
+    flat)
+      WORKLOG_DIR='${abs_worklog_dir}' \\
+      WORKLOG_FILE='${abs_file}' \\
+      TURNS_DIR='${abs_turns_dir}' \\
+      '${abs_script}' view "\$view" 2>/dev/null | tail -n "\$content_h"
+      ;;
+    *)
+      WORKLOG_DIR='${abs_worklog_dir}' \\
+      WORKLOG_FILE='${abs_file}' \\
+      TURNS_DIR='${abs_turns_dir}' \\
+      '${abs_script}' view "\$view" 2>/dev/null | sed -n "1,\${content_h}p"
+      ;;
+  esac
   printf '\\033[?7h'
 }
 

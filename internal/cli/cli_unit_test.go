@@ -884,6 +884,15 @@ func TestViewerScript_Default(t *testing.T) {
 	if !strings.Contains(script, "?7h") {
 		t.Error("viewerScript: should enable terminal autowrap before drawing")
 	}
+	if !strings.Contains(script, `case "$view" in`) {
+		t.Error("viewerScript: should choose truncation policy by view")
+	}
+	if !strings.Contains(script, `flat)`) || !strings.Contains(script, `tail -n "$content_h"`) {
+		t.Error("viewerScript: flat view should keep recency with tail")
+	}
+	if !strings.Contains(script, `sed -n "1,${content_h}p"`) {
+		t.Error("viewerScript: summary views should keep the top of the rendered view")
+	}
 }
 
 // TestViewerScript_CustomRefresh verifies the custom REFRESH_SECONDS branch.

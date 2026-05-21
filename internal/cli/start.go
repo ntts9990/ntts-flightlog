@@ -204,10 +204,20 @@ draw_once() {
   term_h=$(tput lines 2>/dev/null || printf 30)
   content_h=$((term_h - 4))
   [ $content_h -lt 5 ] && content_h=5
-  WORKLOG_DIR='%s' \
-  WORKLOG_FILE='%s' \
-  TURNS_DIR='%s' \
-  '%s' view "$view" 2>/dev/null | tail -n "$content_h"
+  case "$view" in
+    flat)
+      WORKLOG_DIR='%s' \
+      WORKLOG_FILE='%s' \
+      TURNS_DIR='%s' \
+      '%s' view "$view" 2>/dev/null | tail -n "$content_h"
+      ;;
+    *)
+      WORKLOG_DIR='%s' \
+      WORKLOG_FILE='%s' \
+      TURNS_DIR='%s' \
+      '%s' view "$view" 2>/dev/null | sed -n "1,${content_h}p"
+      ;;
+  esac
 }
 
 get_mtime() {
@@ -236,5 +246,5 @@ while true; do
     fi
   fi
 done
-`, absWorklogDir, absFile, absTurnsDir, self, absFile, absFile, refresh)
+`, absWorklogDir, absFile, absTurnsDir, self, absWorklogDir, absFile, absTurnsDir, self, absFile, absFile, refresh)
 }
