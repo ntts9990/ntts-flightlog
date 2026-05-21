@@ -107,6 +107,7 @@ ntts-flightlog decision <title> [detail]
 ntts-flightlog evidence <title> [detail] [--link decision-id-or-title]
 ntts-flightlog blocker <title> [detail]
 ntts-flightlog blocker-resolve <id-or-title> [resolution]
+ntts-flightlog handoff [--format text|md|json]
 ntts-flightlog report [--format text|json] [--window day|week|all] [--agent name]
 ntts-flightlog agent-stats [--format text|json] [--window day|week|all] [--agent name]
 ntts-flightlog doctor
@@ -152,6 +153,11 @@ Inside the tmux pane, the top bar is a 2-line menu — press `1`–`5` to switch
 fragment. Ambiguous matches fail instead of guessing. `blocker-resolve` accepts a
 blocker ID, entry ID, exact title, or unique title fragment and records the
 resolution note for the blockers view.
+
+Use `ntts-flightlog handoff` before switching agents or restarting a session. It
+prints a compact handoff packet with current status, active turn anchors, open
+blockers, decisions that still need evidence, latest evidence, and a recommended
+next action.
 
 Turn-start titles in the pane are OSC 8 hyperlinks. cmd/ctrl-click in iTerm2, WezTerm, Kitty, Ghostty, or the VS Code integrated terminal opens the corresponding `turn-{N}.md` in your default editor. Outside the pane, use `ntts-flightlog turn-path N` to get the path directly.
 

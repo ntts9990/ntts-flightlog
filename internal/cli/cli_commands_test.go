@@ -9,6 +9,7 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -129,6 +130,160 @@ func TestReportCmd_DayWindow(t *testing.T) {
 		t.Fatalf("set window flag: %v", err)
 	}
 	execRunE(t, cmd, false)
+}
+
+func TestHandoffCmd_Text(t *testing.T) {
+	setupEnv(t)
+	seedHandoffFixture(t)
+
+	cmd := newHandoffCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	execRunE(t, cmd, false)
+
+	got := out.String()
+	for _, want := range []string{
+		"NTTS Flightlog handoff",
+		"현재 턴",
+		"handoff 턴",
+		"세션 인계 패킷 생성",
+		"열린 블로커",
+		"대기 중인 외부 확인",
+		"근거 없는 결정",
+		"근거 없는 결정 유지",
+		"최근 근거",
+		"추천 다음 행동",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("handoff text missing %q in:\n%s", want, got)
+		}
+	}
+}
+
+func TestHandoffCmd_JSON(t *testing.T) {
+	setupEnv(t)
+	seedHandoffFixture(t)
+
+	cmd := newHandoffCmd()
+	if err := cmd.Flags().Set("format", "json"); err != nil {
+		t.Fatalf("set format: %v", err)
+	}
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	execRunE(t, cmd, false)
+
+	var got struct {
+		ActiveTurn struct {
+			Title       string   `json:"title"`
+			Intent      string   `json:"intent"`
+			Constraints []string `json:"constraints"`
+		} `json:"active_turn"`
+		OpenBlockers             []handoffBlocker  `json:"open_blockers"`
+		DecisionsNeedingEvidence []handoffDecision `json:"decisions_needing_evidence"`
+		LatestEvidence           []handoffEvidence `json:"latest_evidence"`
+		RecommendedNext          string            `json:"recommended_next"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("handoff json parse: %v\n%s", err, out.String())
+	}
+	if got.ActiveTurn.Title != "handoff 턴" {
+		t.Fatalf("active_turn.title = %q", got.ActiveTurn.Title)
+	}
+	if got.ActiveTurn.Intent != "세션 인계 패킷 생성" {
+		t.Fatalf("active_turn.intent = %q", got.ActiveTurn.Intent)
+	}
+	if len(got.ActiveTurn.Constraints) != 2 {
+		t.Fatalf("constraints = %#v, want 2 items", got.ActiveTurn.Constraints)
+	}
+	if len(got.OpenBlockers) != 1 {
+		t.Fatalf("open_blockers = %d, want 1", len(got.OpenBlockers))
+	}
+	if len(got.DecisionsNeedingEvidence) != 1 {
+		t.Fatalf("decisions_needing_evidence = %d, want 1", len(got.DecisionsNeedingEvidence))
+	}
+	if len(got.LatestEvidence) != 1 {
+		t.Fatalf("latest_evidence = %d, want 1", len(got.LatestEvidence))
+	}
+	if !strings.Contains(got.RecommendedNext, "블로커") {
+		t.Fatalf("recommended_next = %q, want blocker-oriented next action", got.RecommendedNext)
+	}
+}
+
+func TestHandoffCmd_BadFormat(t *testing.T) {
+	setupEnv(t)
+	cmd := newHandoffCmd()
+	if err := cmd.Flags().Set("format", "xml"); err != nil {
+		t.Fatalf("set format: %v", err)
+	}
+	execRunE(t, cmd, true)
+}
+
+func TestHandoffCmd_CurrentSessionOnly(t *testing.T) {
+	setupEnv(t)
+	if err := newStartCmd().RunE(newStartCmd(), []string{"old session"}); err != nil {
+		t.Fatalf("start old: %v", err)
+	}
+	if err := newDecisionCmd().RunE(newDecisionCmd(), []string{"old stale decision"}); err != nil {
+		t.Fatalf("old decision: %v", err)
+	}
+	if err := newStartCmd().RunE(newStartCmd(), []string{"new session"}); err != nil {
+		t.Fatalf("start new: %v", err)
+	}
+	if err := newDecisionCmd().RunE(newDecisionCmd(), []string{"new active decision"}); err != nil {
+		t.Fatalf("new decision: %v", err)
+	}
+
+	cmd := newHandoffCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	execRunE(t, cmd, false)
+
+	got := out.String()
+	if strings.Contains(got, "old stale decision") {
+		t.Fatalf("handoff should not include old session decision:\n%s", got)
+	}
+	if !strings.Contains(got, "new active decision") {
+		t.Fatalf("handoff missing current session decision:\n%s", got)
+	}
+}
+
+func seedHandoffFixture(t *testing.T) {
+	t.Helper()
+	if err := newStartCmd().RunE(newStartCmd(), []string{"handoff 세션"}); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if err := newStatusCmd().RunE(newStatusCmd(), []string{"활성", "handoff 검증", "패킷 출력"}); err != nil {
+		t.Fatalf("status: %v", err)
+	}
+	tsCmd := newTurnStartCmd()
+	if err := tsCmd.Flags().Set("intent", "세션 인계 패킷 생성"); err != nil {
+		t.Fatalf("set intent: %v", err)
+	}
+	if err := tsCmd.Flags().Set("constraints", "60줄 이하,JSON 지원"); err != nil {
+		t.Fatalf("set constraints: %v", err)
+	}
+	if err := tsCmd.Flags().Set("done-when", "text/json 출력 검증"); err != nil {
+		t.Fatalf("set done-when: %v", err)
+	}
+	if err := tsCmd.RunE(tsCmd, []string{"handoff 턴"}); err != nil {
+		t.Fatalf("turn-start: %v", err)
+	}
+	if err := newDecisionCmd().RunE(newDecisionCmd(), []string{"근거 있는 결정"}); err != nil {
+		t.Fatalf("decision linked: %v", err)
+	}
+	linkCmd := newEvidenceCmd()
+	if err := linkCmd.Flags().Set("link", "근거 있는 결정"); err != nil {
+		t.Fatalf("set link: %v", err)
+	}
+	if err := linkCmd.RunE(linkCmd, []string{"테스트 근거"}); err != nil {
+		t.Fatalf("evidence: %v", err)
+	}
+	if err := newDecisionCmd().RunE(newDecisionCmd(), []string{"근거 없는 결정 유지"}); err != nil {
+		t.Fatalf("decision unlinked: %v", err)
+	}
+	if err := newBlockerCmd().RunE(newBlockerCmd(), []string{"대기 중인 외부 확인", "응답 전까지 배포 보류"}); err != nil {
+		t.Fatalf("blocker: %v", err)
+	}
 }
 
 func TestDoctorCmd(t *testing.T) {
