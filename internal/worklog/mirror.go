@@ -78,6 +78,18 @@ func AppendEntry(c *Config, kind, title, detail string) error {
 	return AppendEntryForLane(c, "", kind, title, detail)
 }
 
+// AppendEntryToMain appends a v1-format entry line only to main.md.
+func AppendEntryToMain(c *Config, kind, title, detail string) error {
+	if err := EnsureMainMd(c, ""); err != nil {
+		return err
+	}
+	block := formatEntryBlock(kind, title, detail)
+	if err := appendToFile(c.MainMd, block); err != nil {
+		return fmt.Errorf("mirror: append to main.md: %w", err)
+	}
+	return nil
+}
+
 // AppendEntryForLane appends a v1-format entry line to main.md and the lane's
 // current turn file when that lane has an active turn.
 func AppendEntryForLane(c *Config, lane, kind, title, detail string) error {

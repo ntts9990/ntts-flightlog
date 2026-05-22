@@ -50,6 +50,7 @@ func init() {
 		newModeCmd(),
 		newTurnStartCmd(),
 		newTurnEndCmd(),
+		newTurnCloseCmd(),
 		newEntryCmd(),
 		newDecisionCmd(),
 		newDecisionSupersedeCmd(),

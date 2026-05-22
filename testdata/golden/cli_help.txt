@@ -34,6 +34,7 @@ Available Commands:
   start              새 세션을 시작합니다
   status             현재 세션 상태를 업데이트합니다
   stop               현재 세션을 종료합니다
+  turn-close         지정한 턴을 종료하거나 outcome을 보강합니다
   turn-end           현재 턴을 종료합니다
   turn-path          턴 N(또는 현재 턴)의 절대 경로를 출력합니다
   turn-start         새 턴을 시작합니다

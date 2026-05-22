@@ -156,6 +156,91 @@ func TestLaneTurnsKeepSeparateActivePointers(t *testing.T) {
 	}
 }
 
+func TestTurnCloseCmd_ClosesStaleActiveTurnByNumber(t *testing.T) {
+	dir := setupEnv(t)
+	execRunE(t, newTurnStartCmd(), false, "first active")
+	execRunE(t, newEvidenceCmd(), false, "first evidence")
+	execRunE(t, newTurnStartCmd(), false, "second active")
+
+	execRunE(t, newTurnCloseCmd(), false, "1", "first outcome")
+
+	store, err := db.Open(filepath.Join(dir, "flightlog.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer store.Close()
+
+	var firstStatus, firstOutcome, secondStatus string
+	if err := store.QueryRow(`SELECT status, COALESCE(outcome, '') FROM turns WHERE sequence_no = 1`).Scan(&firstStatus, &firstOutcome); err != nil {
+		t.Fatalf("query first turn: %v", err)
+	}
+	if err := store.QueryRow(`SELECT status FROM turns WHERE sequence_no = 2`).Scan(&secondStatus); err != nil {
+		t.Fatalf("query second turn: %v", err)
+	}
+	if firstStatus != "complete" || firstOutcome != "first outcome" {
+		t.Fatalf("first turn = status %q outcome %q", firstStatus, firstOutcome)
+	}
+	if secondStatus != "active" {
+		t.Fatalf("second turn status = %q, want active", secondStatus)
+	}
+	if got := strings.TrimSpace(string(mustReadFile(t, filepath.Join(dir, "turn-id")))); got == "" {
+		t.Fatal("current active turn pointer should remain for second turn")
+	}
+
+	firstTurn := string(mustReadFile(t, filepath.Join(dir, "turns", "turn-1.md")))
+	secondTurn := string(mustReadFile(t, filepath.Join(dir, "turns", "turn-2.md")))
+	if !strings.Contains(firstTurn, "[turn-1-close] first outcome") {
+		t.Fatalf("turn-1 missing close entry:\n%s", firstTurn)
+	}
+	if strings.Contains(secondTurn, "[turn-1-close] first outcome") {
+		t.Fatalf("turn-close entry leaked into current turn:\n%s", secondTurn)
+	}
+}
+
+func TestTurnCloseCmd_BackfillsCompletedTurnOutcome(t *testing.T) {
+	dir := setupEnv(t)
+	execRunE(t, newTurnStartCmd(), false, "active turn")
+	execRunE(t, newTurnEndCmd(), false, "")
+
+	store, err := db.Open(filepath.Join(dir, "flightlog.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	if _, err := store.Exec(`UPDATE turns SET outcome = NULL WHERE sequence_no = 1`); err != nil {
+		t.Fatalf("clear outcome: %v", err)
+	}
+	store.Close()
+
+	execRunE(t, newTurnCloseCmd(), false, "1", "backfilled outcome")
+
+	store, err = db.Open(filepath.Join(dir, "flightlog.db"))
+	if err != nil {
+		t.Fatalf("reopen db: %v", err)
+	}
+	defer store.Close()
+
+	var status, outcome string
+	if err := store.QueryRow(`SELECT status, COALESCE(outcome, '') FROM turns WHERE sequence_no = 1`).Scan(&status, &outcome); err != nil {
+		t.Fatalf("query turn: %v", err)
+	}
+	if status != "complete" || outcome != "backfilled outcome" {
+		t.Fatalf("turn = status %q outcome %q", status, outcome)
+	}
+	turnFile := string(mustReadFile(t, filepath.Join(dir, "turns", "turn-1.md")))
+	if !strings.Contains(turnFile, "[turn-1-outcome] backfilled outcome") {
+		t.Fatalf("turn file missing outcome entry:\n%s", turnFile)
+	}
+}
+
+func mustReadFile(t *testing.T, path string) []byte {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	return b
+}
+
 func TestIngestCmd_RedactsAndPromotesTestPass(t *testing.T) {
 	dir := setupEnv(t)
 	execRunE(t, newTurnStartCmd(), false, "ingest turn")

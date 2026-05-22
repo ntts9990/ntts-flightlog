@@ -258,7 +258,7 @@ func appendActiveTurnsWithoutEvidence(d *db.DB, f Filter, opts AttentionOptions,
 			SourceID:          id,
 			Title:             turnAttentionTitle(sequenceNo, title),
 			Reason:            fmt.Sprintf("진행 중인 턴에 evidence가 없고 항목 %d개, 경과 %s 상태입니다.", entryCount, formatAttentionDuration(age)),
-			RecommendedAction: "검증 근거를 evidence로 남기거나 turn-end로 결과를 닫으세요.",
+			RecommendedAction: "검증 근거를 evidence로 남기거나 turn-close <turn>로 결과를 닫으세요.",
 			AgeSeconds:        int64Ptr(age),
 		})
 	}
@@ -343,7 +343,7 @@ func appendLongTurnsWithoutOutcome(d *db.DB, f Filter, opts AttentionOptions, it
 			SourceID:          id,
 			Title:             turnAttentionTitle(sequenceNo, title),
 			Reason:            fmt.Sprintf("긴 턴(%s)에 명시적 outcome이 없습니다.", formatAttentionDuration(age)),
-			RecommendedAction: "turn-end 요약을 보강해 결과와 검증 상태를 남기세요.",
+			RecommendedAction: "turn-close <turn> 요약으로 결과와 검증 상태를 남기세요.",
 			AgeSeconds:        int64Ptr(age),
 		})
 	}
