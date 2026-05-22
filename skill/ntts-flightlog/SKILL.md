@@ -120,6 +120,7 @@ If the CLI is not on PATH, call the skill script directly. It will delegate to `
 - `docs/metric-interpretation-guide.md` — GA-blocking guide for turning metric values into decisions, behavior changes, and review objections.
 - `ntts-flightlog doctor` — local preflight for binary path/version, DB migrations, pane liveness, and installed skill wrapper delegation.
 - Inside the pane, press `1`–`6` to switch views, `r` to reload, `q` to quit. Click a turn title with cmd/ctrl held to open the per-turn file (terminal must support OSC 8 hyperlinks).
+- If pane keys stop responding after scrolling, leave tmux copy-mode with `Esc` or `q`, then press the viewer key again.
 
 ## Good Use
 

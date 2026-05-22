@@ -21,6 +21,7 @@ Runtime dependencies for the CLI are bundled in the Go binary. The live side pan
 ```text
 [1]평면 [2]턴별 [3]결정 [4]블로커 [5]리포트 [6]시각화
 [r]새로고침 [q]종료
+스크롤 후 키가 안 먹으면 Esc/q로 복귀
 ----------------------------------------
 # 작업 기록
 
@@ -172,6 +173,7 @@ Inside the tmux pane, the top bar is a 2-line menu — press `1`–`6` to switch
 ```text
 [1]평면 [2]턴별 [3]결정 [4]블로커 [5]리포트 [6]시각화
 [r]새로고침 [q]종료
+스크롤 후 키가 안 먹으면 Esc/q로 복귀
 ```
 
 - `1` flat — chronological live log.
@@ -180,6 +182,7 @@ Inside the tmux pane, the top bar is a 2-line menu — press `1`–`6` to switch
 - `4` blockers — open-risk board with open blockers first and resolved blockers below.
 - `5` report — operational summary of work volume, attention items, turn progress, decision evidence coverage, and blocker state.
 - `6` visual — compact ASCII progress bars for turn completion, decision evidence, blocker resolution, entry mix, and lane distribution.
+- If pane keys stop responding after scrolling, leave tmux copy-mode with `Esc` or `q`, then press the viewer key again.
 
 `evidence --link` accepts either a decision entry ID or a unique decision title
 fragment. Ambiguous matches fail instead of guessing. `blocker-resolve` accepts a

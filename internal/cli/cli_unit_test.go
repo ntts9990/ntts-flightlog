@@ -881,6 +881,12 @@ func TestViewerScript_Default(t *testing.T) {
 			t.Errorf("viewerScript: Korean alias should not be shown in label %q", label)
 		}
 	}
+	if !strings.Contains(script, "스크롤 후 키가 안 먹으면 Esc/q로 복귀") {
+		t.Error("viewerScript: missing copy-mode recovery hint")
+	}
+	if !strings.Contains(script, "content_h=$((term_h - 5))") {
+		t.Error("viewerScript: content height should reserve space for the recovery hint")
+	}
 	if strings.Contains(script, "?7l") {
 		t.Error("viewerScript: should not disable terminal autowrap")
 	}

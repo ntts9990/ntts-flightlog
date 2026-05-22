@@ -552,6 +552,7 @@ print_header() {
   done
   printf '%b\\n' "\$label_line"
   printf '%b\\n' "\${dim}[r]새로고침 [q]종료\${reset}"
+  printf '%b\\n' "\${dim}스크롤 후 키가 안 먹으면 Esc/q로 복귀\${reset}"
   local cols
   cols=\$(tput cols 2>/dev/null || printf 80)
   printf '%*s\\n' \$cols '' | tr ' ' -
@@ -562,7 +563,7 @@ draw_once() {
   print_header "\$view"
   local term_h content_h
   term_h=\$(tput lines 2>/dev/null || printf 30)
-  content_h=\$((term_h - 4))
+  content_h=\$((term_h - 5))
   [ \$content_h -lt 5 ] && content_h=5
   case "\$view" in
     flat)
