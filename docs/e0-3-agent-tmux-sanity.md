@@ -41,3 +41,30 @@ Remaining attachment risk:
 - This proves CLI availability inside tmux panes and non-mutating hook starter
   output. It does not prove live agent hook installation or full native hook
   payload compatibility.
+
+## Hook Starter Ingest Smoke
+
+Ran: 2026-05-22T00:33:23Z
+
+Commands executed:
+
+- `ntts-flightlog ingest --source codex --event session.hook`
+- `ntts-flightlog ingest --source claude --event session.hook`
+- `ntts-flightlog ingest --source gemini --event session.hook`
+
+Result:
+
+- Codex event accepted with `promotion_status: none`,
+  `redaction_version: storage-redaction-2026-05-21`, and
+  `dropped_field_count: 0`.
+- Claude event accepted with `promotion_status: none`,
+  `redaction_version: storage-redaction-2026-05-21`, and
+  `dropped_field_count: 0`.
+- Gemini event accepted with `promotion_status: none`,
+  `redaction_version: storage-redaction-2026-05-21`, and
+  `dropped_field_count: 0`.
+
+Remaining attachment risk:
+
+- This proves the hook starter payload shape is accepted by ingest. It still
+  does not prove installation in each agent's native hook runner.

@@ -13,6 +13,8 @@ and real evidence artifacts.
 - The Agent-Operator evidence scaffold now has dated local metric evidence.
 - 3-agent tmux version smoke passes for Claude Code, Codex, and Gemini, and
   hook starter output has been reviewed as non-mutating/redacted.
+- `docs/phase-e-execution-status.md` records the latest 1-5 Ralph execution
+  status, including completed local evidence and real-world blockers.
 - Strict readiness still fails by design because real Phase E artifacts remain:
   self-retro journal, team-share external acknowledgement, and adversarial
   review.

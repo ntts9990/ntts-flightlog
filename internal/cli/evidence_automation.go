@@ -175,13 +175,20 @@ func checkPhaseEvidence(root string, strict bool) evidenceCheckSnapshot {
 	if strict {
 		snap.addCheck("alpha_dated_entries", snap.Summary.AlphaDatedEntries >= 12, fmt.Sprintf("%d entries", snap.Summary.AlphaDatedEntries))
 		snap.addCheck("changed_by_metric", snap.Summary.ChangedByMetricCount >= 1, fmt.Sprintf("%d entries", snap.Summary.ChangedByMetricCount))
-		snap.addCheck("external_ack", regexp.MustCompile(`(?i)external .*ack|acknowledg`).MatchString(acceptance), "external acknowledgement reference")
+		snap.addCheck("external_ack", hasExternalAcknowledgement(acceptance), "external acknowledgement reference")
 		snap.addCheck("adversarial_review", regexp.MustCompile(`(?i)adversarial review`).MatchString(acceptance), "adversarial review reference")
 	}
 	if len(snap.NextSteps) == 0 {
 		snap.NextSteps = append(snap.NextSteps, "Run ntts-flightlog evidence-report --persona team-share for the next concrete artifact gap.")
 	}
 	return snap
+}
+
+func hasExternalAcknowledgement(acceptance string) bool {
+	if !regexp.MustCompile(`(?i)external .*ack|acknowledg`).MatchString(acceptance) {
+		return false
+	}
+	return !regexp.MustCompile(`(?i)pending[_ -]*(real[_ -]*)?(external[_ -]*)?ack|missing .*ack|no .*ack`).MatchString(acceptance)
 }
 
 func (s *evidenceCheckSnapshot) addCheck(name string, ok bool, detail string) {

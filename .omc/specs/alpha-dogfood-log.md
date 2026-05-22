@@ -39,9 +39,27 @@ Use these canonical phrases to ensure the extractor counts citations:
 ## Weeks
 
 ### Week 1 — Foundation use
-Started: _to be filled when Phase E kicks off_
+Started: 2026-05-22
 
-<!-- Daily entries here -->
+### 2026-05-22 (Day 1 / Week 1)
+
+**What I did**: Continued Phase E readiness work under Ralph. I refreshed
+three-agent attachment evidence, added a metric interpretation guide, and then
+attempted the full 1-5 GA-readiness sequence without fabricating external or
+four-week evidence.
+
+**Metrics consulted**: `turn_duration`, `blocker_accumulation`,
+`agent_completion`, `agent_blocker_freq`, `evidence_bound_decisions`.
+
+**Insight / decision change**: The all-window share showed 24 completed turns
+with an average turn duration of 2m 14s, no blocker accumulation, and 0/1
+evidence-bound decisions. `agent-stats` still showed 75.0% unknown sessions,
+so agent completion and agent blocker frequency are not yet reliable for
+ranking agents. I changed the next-step behavior from "try to make strict pass"
+to "record honest blockers and require real external/self-retro evidence before
+strict GA."
+
+[CHANGED-BY-METRIC: evidence_bound_decisions]
 
 ### Week 2
 

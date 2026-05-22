@@ -367,6 +367,33 @@ func TestEvidenceCheckCmd_StrictFailsOnPlaceholders(t *testing.T) {
 	execRunE(t, cmd, true)
 }
 
+func TestEvidenceCheckCmd_StrictRejectsPendingExternalAck(t *testing.T) {
+	root := t.TempDir()
+	writeEvidenceFixture(t, root)
+	evidencePath := filepath.Join(root, "docs", "v2-ga-acceptance-evidence.md")
+	raw, err := os.ReadFile(evidencePath)
+	if err != nil {
+		t.Fatalf("read evidence fixture: %v", err)
+	}
+	body := strings.Replace(string(raw),
+		"- External recipient ack: acknowledged.",
+		"- External recipient ack: PENDING_REAL_EXTERNAL_ACK.",
+		1,
+	)
+	if err := os.WriteFile(evidencePath, []byte(body), 0o644); err != nil {
+		t.Fatalf("write pending ack evidence: %v", err)
+	}
+
+	cmd := newEvidenceCheckCmd()
+	if err := cmd.Flags().Set("root", root); err != nil {
+		t.Fatalf("set root: %v", err)
+	}
+	if err := cmd.Flags().Set("strict", "true"); err != nil {
+		t.Fatalf("set strict: %v", err)
+	}
+	execRunE(t, cmd, true)
+}
+
 func TestEvidenceReportCmd_CitesPlaceholdersAndNextAction(t *testing.T) {
 	root := t.TempDir()
 	writeEvidenceFixture(t, root)
