@@ -259,7 +259,8 @@ ntts-flightlog evidence-report --persona team-share
 ```
 
 Use `docs/phase-e-ga-readiness-roadmap.md` for the remaining GA-blocking
-workstreams and stop conditions.
+workstreams and stop conditions. Use `docs/metric-interpretation-guide.md` when
+writing or reviewing metric-based evidence.
 
 ## Privacy and Scope
 

@@ -77,7 +77,7 @@ retrospective decisions.
 
 Required artifacts:
 
-- a GA-blocking metric interpretation guide covering turn duration, blocker
+- `docs/metric-interpretation-guide.md`, covering turn duration, blocker
   accumulation, agent completion, agent blocker frequency, and evidence-bound
   decision ratio
 - examples of good and bad decisions based on each metric

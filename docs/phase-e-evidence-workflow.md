@@ -5,6 +5,9 @@ This workflow turns the Phase E retrospective gate into reproducible evidence. I
 For the remaining GA-blocking workstreams and stop conditions, use
 `docs/phase-e-ga-readiness-roadmap.md`.
 
+For interpreting metric values in persona evidence and adversarial review, use
+`docs/metric-interpretation-guide.md`.
+
 ## 1. Keep E0 Live Sanity Current
 
 Run after installing or upgrading any agent CLI:
