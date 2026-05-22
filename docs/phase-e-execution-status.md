@@ -27,12 +27,14 @@ Still required:
 
 ## 2. Team-Share External Recipient Acknowledgement
 
-Status: blocked on real external participant.
+Status: ready to send; blocked on real external participant response.
 
 Completed:
 
 - `.omc/specs/v2-team-share-report.md` now contains a concrete 2026-05-22
   weekly report draft with values for all five metrics.
+- `docs/phase-e-team-share-outbound-packet.md` provides the ready-to-send
+  external review request and acknowledgement capture instructions.
 
 Still required:
 
@@ -79,12 +81,12 @@ Completed:
 
 - Advisory readiness passes.
 - Strict readiness was run with the updated checker and correctly fails on:
-  - `placeholders`: 8 placeholders remain, all in Self-Retro week-four evidence.
+  - `placeholders`: 0 placeholders remain.
   - `alpha_dated_entries`: 1 dated entry, below the 12-entry minimum.
   - `external_ack`: no real external acknowledgement.
 - `evidence-report --persona team-share` now reports all five metrics present
   and asks for the dated external acknowledgement as the next concrete gap.
-- `evidence-report --persona self-retro` still reports week-four placeholders.
+- Self-Retro week-four evidence is explicitly deferred until real usage exists.
 
 Still required:
 

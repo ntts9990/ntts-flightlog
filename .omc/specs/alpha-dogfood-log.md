@@ -34,7 +34,7 @@ Use these canonical phrases to ensure the extractor counts citations:
 
 1. Write each daily entry **without consulting the metric list above first**. Open `flightlog report` only to see numbers, not to plan which metrics to mention.
 2. Run `scripts/extract_citations.sh .omc/specs/alpha-dogfood-log.md` only **after writing** each daily entry. Do not pre-tune entries to clear the gate.
-3. The `[CHANGED-BY-METRIC: X]` tag must reflect a real decision change, not a placeholder. Acceptable: "I shortened lunch breaks because turn_duration showed me afternoon entries were 40% longer than morning ones." Unacceptable: "I noticed the metric." (no behavior change).
+3. The `[CHANGED-BY-METRIC: X]` tag must reflect a real decision change, not filler. Acceptable: "I shortened lunch breaks because turn_duration showed me afternoon entries were 40% longer than morning ones." Unacceptable: "I noticed the metric." (no behavior change).
 
 ## Weeks
 

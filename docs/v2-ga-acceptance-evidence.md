@@ -1,17 +1,27 @@
 # v2 GA Acceptance Evidence
 
-Status: draft evidence scaffold for Phase E. Replace placeholder links with real dated artifacts before GA.
+Status: draft Phase E evidence. Replace deferred Self-Retro and Team-Share
+external acknowledgement entries with real dated artifacts before GA.
 
 ## Self-Retro
 
 Source: `.omc/specs/alpha-dogfood-log.md`
 
-- turn_duration / turn 소요시간: TODO quote from week 4 journal.
-- blocker_accumulation / blocker 누적시간: TODO quote from week 4 journal.
-- agent_completion / agent 완료율: TODO quote from week 4 journal.
-- agent_blocker_freq / agent blocker 빈도: TODO quote from week 4 journal.
-- evidence_bound_decisions / evidence-bound decision: TODO quote from week 4 journal.
-- Behavior change: TODO `[CHANGED-BY-METRIC: metric_id]` quote.
+- turn_duration / turn 소요시간: deferred until Week 4 Self-Retro evidence;
+  current Day 1 entry records 24 completed turns averaging 2m 14s.
+- blocker_accumulation / blocker 누적시간: deferred until Week 4 Self-Retro
+  evidence; current Day 1 entry records no active blockers.
+- agent_completion / agent 완료율: deferred until Week 4 Self-Retro evidence;
+  current Day 1 entry records Codex 8/9 complete turns and unknown 16/18
+  complete turns.
+- agent_blocker_freq / agent blocker 빈도: deferred until Week 4 Self-Retro
+  evidence; current Day 1 entry records Codex and unknown blocker_freq=0.000.
+- evidence_bound_decisions / evidence-bound decision: deferred until Week 4
+  Self-Retro evidence; current Day 1 entry records 0/1 decisions linked to
+  evidence.
+- Behavior change: current Day 1 entry records
+  `[CHANGED-BY-METRIC: evidence_bound_decisions]`; GA still requires the full
+  four-week journal before this section is complete.
 
 ## Agent-Operator
 
