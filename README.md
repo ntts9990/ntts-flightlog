@@ -258,6 +258,9 @@ ntts-flightlog evidence-check --strict
 ntts-flightlog evidence-report --persona team-share
 ```
 
+Use `docs/phase-e-ga-readiness-roadmap.md` for the remaining GA-blocking
+workstreams and stop conditions.
+
 ## Privacy and Scope
 
 All state is written under `.ntts-flightlog/` in the repository where you run the CLI. Metrics stay local in SQLite. Generated worklogs, runtime state, build artifacts, and coverage files are intentionally ignored by git.

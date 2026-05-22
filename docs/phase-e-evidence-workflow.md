@@ -2,6 +2,9 @@
 
 This workflow turns the Phase E retrospective gate into reproducible evidence. It separates scaffold checks from GA-blocking readiness so public contributors can see what is complete and what still needs real data.
 
+For the remaining GA-blocking workstreams and stop conditions, use
+`docs/phase-e-ga-readiness-roadmap.md`.
+
 ## 1. Keep E0 Live Sanity Current
 
 Run after installing or upgrading any agent CLI:

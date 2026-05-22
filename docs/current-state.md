@@ -441,16 +441,20 @@ Not done or not yet attached:
 
 ## 12. Immediate Next Step
 
-The next developer should not start hook ingest first.
+The next developer should stay on the Phase E / GA readiness path rather than
+starting another low-level implementation slice.
 
 Recommended order:
 
-1. Review the uncommitted attention/share/product-scope diff.
-2. Commit it with the repository Lore Commit Protocol if the diff is accepted.
-3. Use `docs/storage-redaction-policy.md` as the prerequisite for future
-   `ingest` and hook starter kit implementation.
-4. Then start lane/team tracking, because agent comparison and team value depend
-   on trustworthy parallel ownership data.
+1. Use `docs/phase-e-ga-readiness-roadmap.md` as the source of truth for the
+   remaining large workstreams.
+2. Draft the GA-blocking metric interpretation guide before adding more
+   implementation features.
+3. Rehearse Codex, Claude Code, and Gemini attachment with explicit `--agent`
+   labels so attribution data becomes usable.
+4. Fill Team-Share only with a real external recipient and acknowledgement.
+5. Run adversarial review after Self-Retro and Team-Share evidence are no
+   longer placeholders.
 
 Useful commands:
 
