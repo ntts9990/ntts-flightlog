@@ -1,6 +1,6 @@
 # E0 3-Agent tmux Sanity
 
-Generated: 2026-05-20T08:10:48Z
+Generated: 2026-05-22T00:25:15Z
 
 - tmux: tmux 3.6a
 - repository: /Users/sungyub/Documents/Projects/ntts-flightlog
@@ -8,7 +8,7 @@ Generated: 2026-05-20T08:10:48Z
 | Agent CLI | Status | Path | Evidence |
 | --- | --- | --- | --- |
 | `claude` | pass | `/opt/homebrew/bin/claude` | `2.1.139 (Claude Code)` |
-| `codex` | pass | `/opt/homebrew/bin/codex` | `codex-cli 0.130.0` |
+| `codex` | pass | `/opt/homebrew/bin/codex` | `codex-cli 0.132.0` |
 | `gemini` | pass | `/opt/homebrew/bin/gemini` | `0.42.0` |
 
 ## Interpretation
@@ -16,3 +16,28 @@ Generated: 2026-05-20T08:10:48Z
 - `pass` means the CLI exists and returned successfully from `--version` inside a tmux pane.
 - `missing` means install or PATH setup is still incomplete.
 - `fail` or `timeout` means the CLI exists but the noninteractive version smoke is not currently usable.
+
+## Hook Starter Review
+
+Reviewed: 2026-05-22T00:25:15Z
+
+Commands checked:
+
+- `ntts-flightlog hooks print --agent codex`
+- `ntts-flightlog hooks print --agent claude`
+- `ntts-flightlog hooks print --agent gemini`
+
+Result:
+
+- `codex`, `claude`, and `gemini` hook starter kits all print copyable commands
+  without mutating global config.
+- Each starter sends only `source`, `event_name`, `summary`, and `dedupe_key`
+  into `ntts-flightlog ingest`.
+- Each starter explicitly drops raw stdout/stderr, raw prompts, full
+  environment, and secrets from ingest.
+
+Remaining attachment risk:
+
+- This proves CLI availability inside tmux panes and non-mutating hook starter
+  output. It does not prove live agent hook installation or full native hook
+  payload compatibility.
