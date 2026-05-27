@@ -19,6 +19,13 @@ var phaseEMetrics = []string{
 	"evidence_bound_decisions",
 }
 
+var (
+	placeholderEvidencePattern = regexp.MustCompile(`(?i)\b(todo|placeholder)\b|_to be filled`)
+	deferredEvidencePattern    = regexp.MustCompile(`(?i)\bdeferred\s+until\b|\bdeferred\s+(self-retro|evidence|entry|entries|journal|week|phase)\b`)
+	pendingEvidencePattern     = regexp.MustCompile(`(?i)pending[_ -]*(real[_ -]*)?(external[_ -]*)?ack|pending real external ack|external .*ack.*pending|ack.*pending|PENDING_REAL`)
+	incompleteEvidencePattern  = regexp.MustCompile(`(?i)missing evidence|lacks evidence|no concrete evidence|not yet (complete|available|collected|present)|lacks external acknowledgement|missing external acknowledgement|no real external acknowledgement`)
+)
+
 func newEvidenceCheckCmd() *cobra.Command {
 	var strict bool
 	var format string
@@ -102,6 +109,7 @@ type evidenceCheckResult struct {
 	Name   string `json:"name"`
 	OK     bool   `json:"ok"`
 	Detail string `json:"detail"`
+	Status string `json:"status,omitempty"`
 }
 
 type evidenceCheckSummary struct {
@@ -123,9 +131,11 @@ type evidenceReport struct {
 }
 
 type evidenceMetricLine struct {
-	Metric  string `json:"metric"`
-	Present bool   `json:"present"`
-	Line    string `json:"line,omitempty"`
+	Metric           string `json:"metric"`
+	Present          bool   `json:"present"`
+	Status           string `json:"status"`
+	CountsTowardGate bool   `json:"counts_toward_gate"`
+	Line             string `json:"line,omitempty"`
 }
 
 func checkPhaseEvidence(root string, strict bool) evidenceCheckSnapshot {
@@ -156,12 +166,26 @@ func checkPhaseEvidence(root string, strict bool) evidenceCheckSnapshot {
 	snap.Summary.ChangedByMetricCount = countPattern(alpha, `\[CHANGED-BY-METRIC: [a-z_]+\]`)
 	passSections := 0
 	for _, persona := range []string{"Self-Retro", "Agent-Operator", "Team-Share"} {
-		count := personaMetricCount(acceptance, persona)
+		count, nonConcrete, missing := personaMetricCounts(acceptance, persona)
 		ok := count >= 4
 		if ok {
 			passSections++
 		}
-		snap.addCheck("persona:"+persona, ok, fmt.Sprintf("%d/5 metrics cited", count))
+		detail := fmt.Sprintf("%d/5 concrete metrics", count)
+		if nonConcrete > 0 {
+			detail += fmt.Sprintf(" (%d non-concrete)", nonConcrete)
+		}
+		if missing > 0 {
+			detail += fmt.Sprintf(" (%d missing)", missing)
+		}
+		if strict {
+			snap.addCheck("persona:"+persona, ok, detail)
+		} else if !ok || nonConcrete > 0 || missing > 0 {
+			snap.addWarning("persona:"+persona, detail)
+			snap.NextSteps = append(snap.NextSteps, fmt.Sprintf("Replace deferred/pending/missing %s evidence with concrete dated evidence before strict GA.", persona))
+		} else {
+			snap.addCheck("persona:"+persona, true, detail)
+		}
 	}
 	snap.Summary.PersonaSectionsPassing = passSections
 	if snap.Summary.PlaceholderCount > 0 {
@@ -199,6 +223,11 @@ func (s *evidenceCheckSnapshot) addCheck(name string, ok bool, detail string) {
 	}
 }
 
+func (s *evidenceCheckSnapshot) addWarning(name, detail string) {
+	s.Checks = append(s.Checks, evidenceCheckResult{Name: name, OK: true, Detail: detail, Status: "warn"})
+	s.Summary.Warnings++
+}
+
 func buildEvidenceReport(root, persona string) evidenceReport {
 	root = cleanRoot(root)
 	source := map[string]string{
@@ -216,11 +245,10 @@ func buildEvidenceReport(root, persona string) evidenceReport {
 	report := evidenceReport{Persona: persona, Source: source, AcceptanceDoc: docPath}
 	text := extractMarkdownSection(acceptance, section)
 	for _, metric := range phaseEMetrics {
-		line := findMetricLine(text, metric)
-		report.Metrics = append(report.Metrics, evidenceMetricLine{Metric: metric, Present: line != "", Line: line})
+		report.Metrics = append(report.Metrics, classifyMetricEvidence(metric, findMetricEntry(text, metric)))
 	}
 	for _, line := range strings.Split(text, "\n") {
-		if regexp.MustCompile(`(?i)TODO|placeholder|_to be filled`).MatchString(line) {
+		if placeholderEvidencePattern.MatchString(line) {
 			report.Placeholders = append(report.Placeholders, strings.TrimSpace(line))
 		}
 	}
@@ -233,7 +261,9 @@ func renderEvidenceCheck(snap evidenceCheckSnapshot) string {
 	fmt.Fprintf(&b, "NTTS Flightlog evidence-check\nmode: %s\nroot: %s\n\n", snap.Mode, snap.Root)
 	for _, check := range snap.Checks {
 		status := "PASS"
-		if !check.OK {
+		if check.Status == "warn" {
+			status = "WARN"
+		} else if !check.OK {
 			status = "FAIL"
 		}
 		fmt.Fprintf(&b, "- %s %s: %s\n", status, check.Name, check.Detail)
@@ -250,11 +280,7 @@ func renderEvidenceReport(report evidenceReport) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "NTTS Flightlog evidence-report\npersona: %s\nsource: %s\n\n", report.Persona, report.Source)
 	for _, metric := range report.Metrics {
-		status := "missing"
-		if metric.Present {
-			status = "present"
-		}
-		fmt.Fprintf(&b, "- %s: %s", metric.Metric, status)
+		fmt.Fprintf(&b, "- %s: %s", metric.Metric, metric.Status)
 		if metric.Line != "" {
 			fmt.Fprintf(&b, " — %s", metric.Line)
 		}
@@ -298,15 +324,20 @@ func countPattern(text, pattern string) int {
 	return len(regexp.MustCompile(pattern).FindAllString(text, -1))
 }
 
-func personaMetricCount(doc, section string) int {
+func personaMetricCounts(doc, section string) (int, int, int) {
 	text := extractMarkdownSection(doc, section)
-	count := 0
+	concrete, nonConcrete, missing := 0, 0, 0
 	for _, metric := range phaseEMetrics {
-		if findMetricLine(text, metric) != "" {
-			count++
+		line := classifyMetricEvidence(metric, findMetricEntry(text, metric))
+		if line.CountsTowardGate {
+			concrete++
+		} else if line.Present {
+			nonConcrete++
+		} else {
+			missing++
 		}
 	}
-	return count
+	return concrete, nonConcrete, missing
 }
 
 func extractMarkdownSection(doc, section string) string {
@@ -327,13 +358,55 @@ func extractMarkdownSection(doc, section string) string {
 	return strings.Join(lines, "\n")
 }
 
-func findMetricLine(text, metric string) string {
-	for _, line := range strings.Split(text, "\n") {
+func findMetricEntry(text, metric string) string {
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
 		if strings.Contains(line, metric) || metricAliasRegexp(metric).MatchString(line) {
-			return strings.TrimSpace(line)
+			var entry []string
+			entry = append(entry, strings.TrimSpace(line))
+			for _, next := range lines[i+1:] {
+				trimmed := strings.TrimSpace(next)
+				if trimmed == "" || strings.HasPrefix(trimmed, "## ") || strings.HasPrefix(trimmed, "- ") {
+					break
+				}
+				entry = append(entry, trimmed)
+			}
+			return strings.Join(entry, " ")
 		}
 	}
 	return ""
+}
+
+func classifyMetricEvidence(metric, entry string) evidenceMetricLine {
+	line := evidenceMetricLine{
+		Metric: metric,
+		Status: "missing",
+		Line:   strings.TrimSpace(entry),
+	}
+	line.Present = line.Line != ""
+	if !line.Present {
+		return line
+	}
+	line.Status = evidenceStatus(line.Line)
+	line.CountsTowardGate = line.Status == "concrete"
+	return line
+}
+
+func evidenceStatus(entry string) string {
+	switch {
+	case placeholderEvidencePattern.MatchString(entry):
+		return "placeholder"
+	case deferredEvidencePattern.MatchString(entry):
+		return "deferred"
+	case pendingEvidencePattern.MatchString(entry):
+		return "pending"
+	case incompleteEvidencePattern.MatchString(entry):
+		return "pending"
+	case strings.TrimSpace(entry) == "":
+		return "missing"
+	default:
+		return "concrete"
+	}
 }
 
 func metricAliasRegexp(metric string) *regexp.Regexp {
@@ -355,6 +428,15 @@ func nextEvidenceAction(report evidenceReport) string {
 	for _, item := range report.Metrics {
 		if !item.Present {
 			return fmt.Sprintf("Add concrete %s evidence to %s and cite the source artifact.", item.Metric, report.AcceptanceDoc)
+		}
+		if !item.CountsTowardGate {
+			if report.Persona == "self-retro" && item.Status == "deferred" {
+				return "Continue the four-week Self-Retro journal, then replace deferred metric lines with dated concrete evidence and rerun evidence-check --strict."
+			}
+			if report.Persona == "team-share" && item.Status == "pending" {
+				return "Add dated external acknowledgement after sharing ntts-flightlog share --window week --format md."
+			}
+			return fmt.Sprintf("Replace %s %s evidence with concrete dated evidence and rerun evidence-check --strict.", item.Status, item.Metric)
 		}
 	}
 	if len(report.Placeholders) > 0 {

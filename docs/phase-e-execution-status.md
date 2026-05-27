@@ -1,6 +1,6 @@
 # Phase E 1-5 Execution Status
 
-Status date: 2026-05-22
+Status date: 2026-05-27
 
 This status records the `$ralph` attempt to run the remaining Phase E sequence
 in order. It separates completed local evidence from work that requires time or
@@ -92,3 +92,25 @@ Still required:
 
 - Complete the real external/time-bound evidence above.
 - Re-run `ntts-flightlog evidence-check --strict`.
+
+## 6. Semantic Evidence Readiness
+
+Status: local checker hardening complete; GA evidence still incomplete.
+
+Completed:
+
+- `evidence-check` now distinguishes token-level metric mentions from concrete
+  gate-counting evidence.
+- `evidence-report --format json` preserves `present` as token/alias found and
+  adds `status` plus `counts_toward_gate` for semantic readiness.
+- Current Self-Retro deferred metric lines report as non-concrete instead of
+  satisfying the persona gate.
+- Token lint remains separate: `scripts/lint_evidence_doc.sh` checks that metric
+  names are mentioned, while `ntts-flightlog evidence-check` checks whether those
+  mentions are concrete enough for readiness.
+
+Still required:
+
+- Continue the real four-week Self-Retro journal.
+- Add a dated real Team-Share external acknowledgement.
+- Re-run adversarial review after those artifacts are concrete.

@@ -142,10 +142,14 @@ evidence/blocker candidates.
 agent config. `hooks doctor` checks that the local binary, worklog directory,
 and redacted ingest path are reachable.
 
-`evidence-check` is the read-only Phase E readiness gate. Advisory mode reports
-missing artifacts and placeholders; `--strict` returns non-zero while GA evidence
-is incomplete. `evidence-report` prints the concrete persona-specific gap and
-next action.
+`evidence-check` is the read-only Phase E semantic readiness gate. Advisory mode
+reports missing artifacts, placeholders, and non-concrete persona evidence;
+`--strict` returns non-zero while GA evidence is incomplete. Token-level lint
+(`bash scripts/lint_evidence_doc.sh docs/v2-ga-acceptance-evidence.md`) only
+checks that metric names are mentioned; `evidence-check` decides whether those
+mentions count toward the GA gate. `evidence-report` prints each metric's
+`present`, `status`, and `counts_toward_gate` state plus the concrete
+persona-specific next action.
 
 ## Metrics
 
@@ -263,7 +267,9 @@ ntts-flightlog evidence-report --persona team-share
 
 Use `docs/phase-e-ga-readiness-roadmap.md` for the remaining GA-blocking
 workstreams and stop conditions. Use `docs/metric-interpretation-guide.md` when
-writing or reviewing metric-based evidence.
+writing or reviewing metric-based evidence. Use `scripts/lint_evidence_doc.sh`
+as token-level metric-name lint only; use `ntts-flightlog evidence-check` for
+semantic readiness.
 
 ## Privacy and Scope
 

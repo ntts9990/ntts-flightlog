@@ -479,6 +479,175 @@ func TestEvidenceCheckCmd_StrictRejectsPendingExternalAck(t *testing.T) {
 	execRunE(t, cmd, true)
 }
 
+func TestEvidenceCheckCmd_AdvisoryWarnsOnDeferredSelfRetro(t *testing.T) {
+	root := t.TempDir()
+	writeEvidenceFixture(t, root)
+	writeAcceptanceEvidence(t, root, deferredSelfRetroEvidenceDoc())
+
+	cmd := newEvidenceCheckCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Flags().Set("root", root); err != nil {
+		t.Fatalf("set root: %v", err)
+	}
+	execRunE(t, cmd, false)
+
+	got := out.String()
+	for _, want := range []string{
+		"WARN persona:Self-Retro: 0/5 concrete metrics (5 non-concrete)",
+		"summary: failures 0, warnings 1",
+		"Replace deferred/pending/missing Self-Retro evidence",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("advisory output missing %q in:\n%s", want, got)
+		}
+	}
+}
+
+func TestEvidenceCheckCmd_AdvisoryWarnsOnMixedConcreteAndDeferredEvidence(t *testing.T) {
+	root := t.TempDir()
+	writeEvidenceFixture(t, root)
+	writeAcceptanceEvidence(t, root, mixedConcreteDeferredEvidenceDoc())
+
+	cmd := newEvidenceCheckCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Flags().Set("root", root); err != nil {
+		t.Fatalf("set root: %v", err)
+	}
+	execRunE(t, cmd, false)
+
+	got := out.String()
+	for _, want := range []string{
+		"WARN persona:Self-Retro: 4/5 concrete metrics (1 non-concrete)",
+		"summary: failures 0, warnings 1",
+		"Replace deferred/pending/missing Self-Retro evidence",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("advisory mixed output missing %q in:\n%s", want, got)
+		}
+	}
+}
+
+func TestEvidenceCheckCmd_StrictFailsOnDeferredSelfRetroConcreteCount(t *testing.T) {
+	root := t.TempDir()
+	writeEvidenceFixture(t, root)
+	writeAcceptanceEvidence(t, root, deferredSelfRetroEvidenceDoc())
+
+	cmd := newEvidenceCheckCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Flags().Set("root", root); err != nil {
+		t.Fatalf("set root: %v", err)
+	}
+	if err := cmd.Flags().Set("strict", "true"); err != nil {
+		t.Fatalf("set strict: %v", err)
+	}
+	execRunE(t, cmd, true)
+
+	got := out.String()
+	for _, want := range []string{
+		"FAIL persona:Self-Retro: 0/5 concrete metrics (5 non-concrete)",
+		"PASS persona:Agent-Operator: 5/5 concrete metrics",
+		"PASS persona:Team-Share: 5/5 concrete metrics",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("strict output missing %q in:\n%s", want, got)
+		}
+	}
+}
+
+func TestEvidenceReportCmd_JSONKeepsPresentAndAddsSemanticStatus(t *testing.T) {
+	root := t.TempDir()
+	writeEvidenceFixture(t, root)
+	writeAcceptanceEvidence(t, root, deferredSelfRetroEvidenceDoc())
+
+	cmd := newEvidenceReportCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Flags().Set("root", root); err != nil {
+		t.Fatalf("set root: %v", err)
+	}
+	if err := cmd.Flags().Set("persona", "self-retro"); err != nil {
+		t.Fatalf("set persona: %v", err)
+	}
+	if err := cmd.Flags().Set("format", "json"); err != nil {
+		t.Fatalf("set format: %v", err)
+	}
+	execRunE(t, cmd, false)
+
+	var got struct {
+		Metrics []struct {
+			Metric           string `json:"metric"`
+			Present          bool   `json:"present"`
+			Status           string `json:"status"`
+			CountsTowardGate bool   `json:"counts_toward_gate"`
+			Line             string `json:"line"`
+		} `json:"metrics"`
+		NextAction string `json:"next_action"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("decode evidence-report json: %v\n%s", err, out.String())
+	}
+	if len(got.Metrics) != len(phaseEMetrics) {
+		t.Fatalf("metrics len = %d, want %d", len(got.Metrics), len(phaseEMetrics))
+	}
+	first := got.Metrics[0]
+	if first.Metric != "turn_duration" || !first.Present || first.Status != "deferred" || first.CountsTowardGate {
+		t.Fatalf("first metric = %#v, want token-present deferred non-counting", first)
+	}
+	if !strings.Contains(first.Line, "current Day 1 entry records 24 completed turns") {
+		t.Fatalf("wrapped continuation line was not included: %#v", first.Line)
+	}
+	if !strings.Contains(got.NextAction, "four-week Self-Retro journal") {
+		t.Fatalf("next action = %q", got.NextAction)
+	}
+}
+
+func TestEvidenceCheckCmd_PendingAckDoesNotInvalidateConcreteTeamShareMetrics(t *testing.T) {
+	root := t.TempDir()
+	writeEvidenceFixture(t, root)
+	evidencePath := filepath.Join(root, "docs", "v2-ga-acceptance-evidence.md")
+	raw, err := os.ReadFile(evidencePath)
+	if err != nil {
+		t.Fatalf("read evidence fixture: %v", err)
+	}
+	body := strings.Replace(string(raw),
+		"- External recipient ack: acknowledged.",
+		"- External recipient ack: PENDING_REAL_EXTERNAL_ACK.",
+		1,
+	)
+	writeAcceptanceEvidence(t, root, body)
+
+	cmd := newEvidenceCheckCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Flags().Set("root", root); err != nil {
+		t.Fatalf("set root: %v", err)
+	}
+	if err := cmd.Flags().Set("strict", "true"); err != nil {
+		t.Fatalf("set strict: %v", err)
+	}
+	execRunE(t, cmd, true)
+
+	got := out.String()
+	for _, want := range []string{
+		"PASS persona:Team-Share: 5/5 concrete metrics",
+		"FAIL external_ack: external acknowledgement reference",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("strict pending ack output missing %q in:\n%s", want, got)
+		}
+	}
+}
+
+func TestClassifyMetricEvidence_DoesNotRejectIncidentalMissingText(t *testing.T) {
+	got := classifyMetricEvidence("blocker_accumulation", "- blocker_accumulation / blocker 누적시간: no missing blockers were found; active blockers: 0.")
+	if !got.Present || got.Status != "concrete" || !got.CountsTowardGate {
+		t.Fatalf("classification = %#v, want concrete gate-counting evidence", got)
+	}
+}
+
 func TestEvidenceReportCmd_CitesPlaceholdersAndNextAction(t *testing.T) {
 	root := t.TempDir()
 	writeEvidenceFixture(t, root)
@@ -565,6 +734,79 @@ func writeEvidenceFixture(t *testing.T, root string) {
 			t.Fatalf("write %s: %v", path, err)
 		}
 	}
+}
+
+func writeAcceptanceEvidence(t *testing.T, root, body string) {
+	t.Helper()
+	path := filepath.Join(root, "docs", "v2-ga-acceptance-evidence.md")
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatalf("write acceptance evidence: %v", err)
+	}
+}
+
+func deferredSelfRetroEvidenceDoc() string {
+	return `# v2 GA Acceptance Evidence
+
+## Self-Retro
+
+- turn_duration / turn 소요시간: deferred until Week 4 Self-Retro evidence;
+  current Day 1 entry records 24 completed turns averaging 2m 14s.
+- blocker_accumulation / blocker 누적시간: deferred until Week 4 Self-Retro evidence.
+- agent_completion / agent 완료율: deferred until Week 4 Self-Retro evidence.
+- agent_blocker_freq / agent blocker 빈도: deferred until Week 4 Self-Retro evidence.
+- evidence_bound_decisions / evidence-bound decision: deferred until Week 4 Self-Retro evidence.
+- Behavior change: current Day 1 entry records [CHANGED-BY-METRIC: evidence_bound_decisions].
+
+## Agent-Operator
+
+- turn_duration / turn 소요시간: 10m.
+- blocker_accumulation / blocker 누적시간: 0.
+- agent_completion / agent 완료율: 100%.
+- agent_blocker_freq / agent blocker 빈도: 0.
+- evidence_bound_decisions / evidence-bound decision: 4/4.
+- Adversarial review: linked.
+
+## Team-Share
+
+- turn_duration / turn 소요시간: 10m.
+- blocker_accumulation / blocker 누적시간: 0.
+- agent_completion / agent 완료율: 100%.
+- agent_blocker_freq / agent blocker 빈도: 0.
+- evidence_bound_decisions / evidence-bound decision: 4/4.
+- External recipient ack: acknowledged.
+`
+}
+
+func mixedConcreteDeferredEvidenceDoc() string {
+	return `# v2 GA Acceptance Evidence
+
+## Self-Retro
+
+- turn_duration / turn 소요시간: 10m.
+- blocker_accumulation / blocker 누적시간: 0.
+- agent_completion / agent 완료율: 100%.
+- agent_blocker_freq / agent blocker 빈도: 0.
+- evidence_bound_decisions / evidence-bound decision: deferred until Week 4 Self-Retro evidence.
+- Behavior change: current Day 1 entry records [CHANGED-BY-METRIC: evidence_bound_decisions].
+
+## Agent-Operator
+
+- turn_duration / turn 소요시간: 10m.
+- blocker_accumulation / blocker 누적시간: 0.
+- agent_completion / agent 완료율: 100%.
+- agent_blocker_freq / agent blocker 빈도: 0.
+- evidence_bound_decisions / evidence-bound decision: 4/4.
+- Adversarial review: linked.
+
+## Team-Share
+
+- turn_duration / turn 소요시간: 10m.
+- blocker_accumulation / blocker 누적시간: 0.
+- agent_completion / agent 완료율: 100%.
+- agent_blocker_freq / agent blocker 빈도: 0.
+- evidence_bound_decisions / evidence-bound decision: 4/4.
+- External recipient ack: acknowledged.
+`
 }
 
 // TestReportCmd_Text runs report --format text on an empty DB.

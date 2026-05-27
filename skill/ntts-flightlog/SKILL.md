@@ -96,8 +96,8 @@ If the CLI is not on PATH, call the skill script directly. It will delegate to `
 - `entry <title> [detail]`: append a timestamped milestone (mirrored to the active turn file).
 - `decision <title> [detail]`: append a decision record (mirrored).
 - `evidence <title> [detail]`: append verification evidence (mirrored).
-- `evidence-check [--strict] [--format text|json]`: read-only Phase E readiness gate; strict mode fails while GA evidence is incomplete.
-- `evidence-report --persona self-retro|agent-operator|team-share [--format text|json]`: show persona-specific evidence coverage, placeholders, and next action.
+- `evidence-check [--strict] [--format text|json]`: read-only Phase E semantic readiness gate; strict mode fails while GA evidence is incomplete. Token-level metric lint can pass while semantic readiness still warns or fails on deferred/pending evidence.
+- `evidence-report --persona self-retro|agent-operator|team-share [--format text|json]`: show persona-specific evidence coverage, semantic status, gate-counting state, placeholders, and next action.
 - `blocker <title> [detail]`: append a blocker (mirrored).
 - `ingest --source <agent> --event <name> < event.json`: store a redacted hook/event audit record and promote test pass/fail events into reviewable evidence/blocker candidates.
 - `hooks print --agent codex|claude|gemini`: print copyable hook starter commands without mutating global config.
@@ -116,7 +116,7 @@ If the CLI is not on PATH, call the skill script directly. It will delegate to `
 - `ntts-flightlog share --window week --format md` — portable status report for PRs, issues, email, or Phase E team-share evidence.
 - `ntts-flightlog ingest --source codex --event test.finished < event.json` — redacted, bounded hook/event intake for evidence/blocker candidate creation.
 - `ntts-flightlog hooks print --agent codex` — copyable hook starter command for opt-in ingest.
-- `ntts-flightlog evidence-check --strict` — GA-blocking readiness check for Phase E evidence.
+- `ntts-flightlog evidence-check --strict` — GA-blocking semantic readiness check for Phase E evidence.
 - `docs/metric-interpretation-guide.md` — GA-blocking guide for turning metric values into decisions, behavior changes, and review objections.
 - `ntts-flightlog doctor` — local preflight for binary path/version, DB migrations, pane liveness, and installed skill wrapper delegation.
 - Inside the pane, press `1`–`6` to switch views, `r` to reload, `q` to quit. Click a turn title with cmd/ctrl held to open the per-turn file (terminal must support OSC 8 hyperlinks).
