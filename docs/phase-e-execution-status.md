@@ -18,12 +18,22 @@ Completed:
 - Starter-shaped ingest smoke events for `codex`, `claude`, and `gemini` were
   accepted by `ntts-flightlog ingest` with redaction version
   `storage-redaction-2026-05-21`.
+- `scripts/phase_e_agent_rehearsal.sh` now runs a temporary local worklog
+  rehearsal for `codex`, `claude`, and `gemini` using explicit `--agent`
+  overrides. Each agent completed `auto`, `turn-start`, `entry`, `evidence`,
+  `turn-end`, `handoff`, and `stop`.
+- The generated artifact is
+  `docs/e0-3-agent-attachment-rehearsal.md`. It records
+  `override_rate: 100.0%` and `auto_detect_unknown_rate: 100.0%`, so it proves
+  explicit attribution works but does not prove native hook auto-detection.
 
 Still required:
 
 - Install or wire the starter command into each agent's real native hook runner.
 - Capture dated evidence that each native hook fired from an actual agent
   session, not only from a manual ingest smoke.
+- Reduce or explicitly account for unknown attribution in persistent
+  `agent-stats` before using agent metrics for comparison.
 
 ## 2. Team-Share External Recipient Acknowledgement
 

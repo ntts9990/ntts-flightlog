@@ -252,9 +252,13 @@ For local 3-agent sanity checks:
 
 ```bash
 scripts/sanity_3_agents_tmux.sh
+scripts/phase_e_agent_rehearsal.sh
 ```
 
 The check writes `docs/e0-3-agent-tmux-sanity.md` and verifies `claude`, `codex`, and `gemini` inside tmux panes when those CLIs are installed.
+The rehearsal writes `docs/e0-3-agent-attachment-rehearsal.md` and verifies a
+complete local workflow for `codex`, `claude`, and `gemini` using explicit
+`--agent` overrides. It is not native hook installation evidence.
 
 For Phase E evidence readiness:
 

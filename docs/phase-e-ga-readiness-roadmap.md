@@ -1,6 +1,6 @@
 # Phase E / GA Readiness Roadmap
 
-Status date: 2026-05-22
+Status date: 2026-05-27
 
 This roadmap keeps the remaining work focused on product readiness instead of
 small implementation drift. The current CLI can record, render, share, and check
@@ -13,6 +13,9 @@ and real evidence artifacts.
 - The Agent-Operator evidence scaffold now has dated local metric evidence.
 - 3-agent tmux version smoke passes for Claude Code, Codex, and Gemini, and
   hook starter output has been reviewed as non-mutating/redacted.
+- 3-agent explicit attachment rehearsal now passes for Codex, Claude, and
+  Gemini via `scripts/phase_e_agent_rehearsal.sh`, with dated evidence in
+  `docs/e0-3-agent-attachment-rehearsal.md`.
 - `docs/phase-e-execution-status.md` records the latest 1-5 Ralph execution
   status, including completed local evidence and real-world blockers.
 - `docs/phase-e-team-share-outbound-packet.md` is ready to send to a real
@@ -21,7 +24,10 @@ and real evidence artifacts.
   self-retro journal, team-share external acknowledgement, and adversarial
   review.
 - `agent-stats` shows attribution is not ready for cross-agent comparison:
-  75.0% unknown sessions in the latest local report.
+  75.0% unknown sessions in the latest persistent local report. The temporary
+  explicit-agent rehearsal shows `override_rate: 100.0%` and
+  `auto_detect_unknown_rate: 100.0%`, proving the manual attribution path while
+  leaving native auto-detection unresolved.
 
 ## GA-Blocking Workstreams
 
@@ -34,6 +40,7 @@ Required artifacts:
 
 - one sanity log per agent showing `auto`, `turn-start`, `entry`, `evidence`,
   `turn-end`, and `handoff`
+- one explicit `--agent` rehearsal artifact for Codex, Claude, and Gemini
 - hook starter output reviewed against each agent's native payload shape
 - `agent-stats` unknown rate trending below the GA threshold once explicit
   `--agent` flags or hooks are used
@@ -109,7 +116,8 @@ Stop condition:
 1. Close stale local attention items that are already known bookkeeping noise:
    old active turns and old unlinked product-direction decision.
 2. Draft the metric interpretation guide, because it supports every persona.
-3. Run a three-agent attachment rehearsal using explicit `--agent` flags.
+3. Wire the hook starter into real native agent hook runners and capture one
+   dated hook-fired event per agent; the explicit `--agent` rehearsal is done.
 4. Fill Team-Share only after a real external recipient exists.
 5. Run the adversarial review after Self-Retro and Team-Share are no longer
    placeholders.

@@ -117,6 +117,7 @@ If the CLI is not on PATH, call the skill script directly. It will delegate to `
 - `ntts-flightlog ingest --source codex --event test.finished < event.json` — redacted, bounded hook/event intake for evidence/blocker candidate creation.
 - `ntts-flightlog hooks print --agent codex` — copyable hook starter command for opt-in ingest.
 - `ntts-flightlog evidence-check --strict` — GA-blocking semantic readiness check for Phase E evidence.
+- `scripts/phase_e_agent_rehearsal.sh` — regenerate the Phase E explicit-agent rehearsal artifact for Codex, Claude, and Gemini without mutating the user's worklog.
 - `docs/metric-interpretation-guide.md` — GA-blocking guide for turning metric values into decisions, behavior changes, and review objections.
 - `ntts-flightlog doctor` — local preflight for binary path/version, DB migrations, pane liveness, and installed skill wrapper delegation.
 - Inside the pane, press `1`–`6` to switch views, `r` to reload, `q` to quit. Click a turn title with cmd/ctrl held to open the per-turn file (terminal must support OSC 8 hyperlinks).
