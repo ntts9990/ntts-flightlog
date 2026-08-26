@@ -147,7 +147,7 @@ func TestMigrateTracksFilenames(t *testing.T) {
 	if err != nil {
 		t.Fatalf("query: %v", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var files []string
 	for rows.Next() {

@@ -154,7 +154,7 @@ func appendStaleBlockers(d *db.DB, f Filter, opts AttentionOptions, items []Atte
 	if err != nil {
 		return nil, fmt.Errorf("attention stale blockers: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var id, title, openedAt string
@@ -201,7 +201,7 @@ func appendDecisionsWithoutEvidence(d *db.DB, f Filter, items []AttentionItem) (
 	if err != nil {
 		return nil, fmt.Errorf("attention decisions without evidence: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var id, title string
@@ -238,7 +238,7 @@ func appendActiveTurnsWithoutEvidence(d *db.DB, f Filter, opts AttentionOptions,
 	if err != nil {
 		return nil, fmt.Errorf("attention active turns: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var id, title, startedAt string
@@ -278,7 +278,7 @@ func appendDriftAlerts(d *db.DB, f Filter, items []AttentionItem) ([]AttentionIt
 	if err != nil {
 		return nil, fmt.Errorf("attention drift alerts: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var id, title string
@@ -314,7 +314,7 @@ func appendLongTurnsWithoutOutcome(d *db.DB, f Filter, opts AttentionOptions, it
 	if err != nil {
 		return nil, fmt.Errorf("attention long turns: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var id, title, startedAt, endedAt, status string

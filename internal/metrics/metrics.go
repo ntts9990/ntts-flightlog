@@ -76,7 +76,7 @@ func QueryTurnDurations(d *db.DB, f Filter) ([]TurnDuration, error) {
 	if err != nil {
 		return nil, fmt.Errorf("metric_turn_duration: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []TurnDuration
 	for rows.Next() {
@@ -115,7 +115,7 @@ func QueryBlockerAccumulations(d *db.DB, f Filter) ([]BlockerAccumulation, error
 	if err != nil {
 		return nil, fmt.Errorf("metric_blocker_accumulation: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []BlockerAccumulation
 	for rows.Next() {
@@ -155,7 +155,7 @@ func QueryAgentCompletion(d *db.DB, f Filter) ([]AgentCompletion, error) {
 	if err != nil {
 		return nil, fmt.Errorf("metric_agent_completion: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []AgentCompletion
 	for rows.Next() {
@@ -195,7 +195,7 @@ func QueryAgentBlockerFreq(d *db.DB, f Filter) ([]AgentBlockerFreq, error) {
 	if err != nil {
 		return nil, fmt.Errorf("metric_agent_blocker_freq: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []AgentBlockerFreq
 	for rows.Next() {

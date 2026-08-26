@@ -38,7 +38,7 @@ func newTurnCloseCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if target.status != db.TurnStatusActive && !(target.status == db.TurnStatusComplete && target.outcome == "") {
+			if target.status != db.TurnStatusActive && (target.status != db.TurnStatusComplete || target.outcome != "") {
 				return fmt.Errorf("turn-close: turn %d is %s, not active", target.sequenceNo, target.status)
 			}
 
@@ -101,7 +101,7 @@ func queryClosableTurn(s *session, where string, args ...any) (closableTurn, err
 	if err != nil {
 		return closableTurn{}, fmt.Errorf("turn-close: find turn: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var matches []closableTurn
 	for rows.Next() {

@@ -28,7 +28,7 @@ func newTurnPathCmd() *cobra.Command {
 				n = cfg.CurrentTurnNumber()
 			}
 			if n == 0 {
-				return fmt.Errorf("활성 turn이 없습니다. turn-start로 시작하세요.")
+				return fmt.Errorf("활성 turn이 없습니다. turn-start로 시작하세요")
 			}
 			abs, err := filepath.Abs(cfg.TurnFilePath(n))
 			if err != nil {

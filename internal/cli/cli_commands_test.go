@@ -48,24 +48,24 @@ func setupEnv(t *testing.T) string {
 // already migrates, but it exercises the RunE handler).
 func TestMigrateCmd(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newMigrateCmd(), false)
+	_ = execRunE(t, newMigrateCmd(), false)
 }
 
 // TestPathCmd prints the worklog path to stdout.
 func TestPathCmd(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newPathCmd(), false)
+	_ = execRunE(t, newPathCmd(), false)
 }
 
 // TestStatusCmd updates the status label (requires ≥1 arg).
 func TestStatusCmd(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newStatusCmd(), false, "활성", "작업 중", "다음 단계")
+	_ = execRunE(t, newStatusCmd(), false, "활성", "작업 중", "다음 단계")
 }
 
 func TestStatusCmd_CreatesSessionWithoutStart(t *testing.T) {
 	dir := setupEnv(t)
-	execRunE(t, newStatusCmd(), false, "활성", "작업 중", "다음 단계")
+	_ = execRunE(t, newStatusCmd(), false, "활성", "작업 중", "다음 단계")
 	if b, err := os.ReadFile(filepath.Join(dir, "session-id")); err != nil || len(b) == 0 {
 		t.Fatalf("status should create session-id, got len=%d err=%v", len(b), err)
 	}
@@ -73,7 +73,7 @@ func TestStatusCmd_CreatesSessionWithoutStart(t *testing.T) {
 
 func TestModeCmd_CreatesSessionWithoutStart(t *testing.T) {
 	dir := setupEnv(t)
-	execRunE(t, newModeCmd(), false, "solo", "시작 없이 모드 기록")
+	_ = execRunE(t, newModeCmd(), false, "solo", "시작 없이 모드 기록")
 	if b, err := os.ReadFile(filepath.Join(dir, "session-id")); err != nil || len(b) == 0 {
 		t.Fatalf("mode should create session-id, got len=%d err=%v", len(b), err)
 	}
@@ -81,7 +81,7 @@ func TestModeCmd_CreatesSessionWithoutStart(t *testing.T) {
 
 func TestTurnStartCmd_CreatesSessionWithoutStart(t *testing.T) {
 	dir := setupEnv(t)
-	execRunE(t, newTurnStartCmd(), false, "시작 없이 턴")
+	_ = execRunE(t, newTurnStartCmd(), false, "시작 없이 턴")
 	if b, err := os.ReadFile(filepath.Join(dir, "session-id")); err != nil || len(b) == 0 {
 		t.Fatalf("turn-start should create session-id, got len=%d err=%v", len(b), err)
 	}
@@ -93,12 +93,12 @@ func TestLaneTurnsKeepSeparateActivePointers(t *testing.T) {
 	t.Cleanup(func() { laneFlag = oldLane })
 
 	laneFlag = "worker-a"
-	execRunE(t, newTurnStartCmd(), false, "worker A 턴")
-	execRunE(t, newEntryCmd(), false, "A 작업", "lane A")
+	_ = execRunE(t, newTurnStartCmd(), false, "worker A 턴")
+	_ = execRunE(t, newEntryCmd(), false, "A 작업", "lane A")
 
 	laneFlag = "worker-b"
-	execRunE(t, newTurnStartCmd(), false, "worker B 턴")
-	execRunE(t, newEntryCmd(), false, "B 작업", "lane B")
+	_ = execRunE(t, newTurnStartCmd(), false, "worker B 턴")
+	_ = execRunE(t, newEntryCmd(), false, "B 작업", "lane B")
 
 	if _, err := os.Stat(filepath.Join(dir, "lanes", "worker-a", "turn-id")); err != nil {
 		t.Fatalf("worker-a active turn missing: %v", err)
@@ -108,7 +108,7 @@ func TestLaneTurnsKeepSeparateActivePointers(t *testing.T) {
 	}
 
 	laneFlag = "worker-a"
-	execRunE(t, newTurnEndCmd(), false, "A 완료")
+	_ = execRunE(t, newTurnEndCmd(), false, "A 완료")
 	if _, err := os.Stat(filepath.Join(dir, "lanes", "worker-a", "turn-id")); !os.IsNotExist(err) {
 		t.Fatalf("worker-a active turn should be cleared, err=%v", err)
 	}
@@ -120,13 +120,13 @@ func TestLaneTurnsKeepSeparateActivePointers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	rows, err := store.Query(`SELECT lane, COUNT(*) FROM turns GROUP BY lane ORDER BY lane`)
 	if err != nil {
 		t.Fatalf("query lanes: %v", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	got := map[string]int{}
 	for rows.Next() {
 		var lane string
@@ -158,17 +158,17 @@ func TestLaneTurnsKeepSeparateActivePointers(t *testing.T) {
 
 func TestTurnCloseCmd_ClosesStaleActiveTurnByNumber(t *testing.T) {
 	dir := setupEnv(t)
-	execRunE(t, newTurnStartCmd(), false, "first active")
-	execRunE(t, newEvidenceCmd(), false, "first evidence")
-	execRunE(t, newTurnStartCmd(), false, "second active")
+	_ = execRunE(t, newTurnStartCmd(), false, "first active")
+	_ = execRunE(t, newEvidenceCmd(), false, "first evidence")
+	_ = execRunE(t, newTurnStartCmd(), false, "second active")
 
-	execRunE(t, newTurnCloseCmd(), false, "1", "first outcome")
+	_ = execRunE(t, newTurnCloseCmd(), false, "1", "first outcome")
 
 	store, err := db.Open(filepath.Join(dir, "flightlog.db"))
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	var firstStatus, firstOutcome, secondStatus string
 	if err := store.QueryRow(`SELECT status, COALESCE(outcome, '') FROM turns WHERE sequence_no = 1`).Scan(&firstStatus, &firstOutcome); err != nil {
@@ -199,8 +199,8 @@ func TestTurnCloseCmd_ClosesStaleActiveTurnByNumber(t *testing.T) {
 
 func TestTurnCloseCmd_BackfillsCompletedTurnOutcome(t *testing.T) {
 	dir := setupEnv(t)
-	execRunE(t, newTurnStartCmd(), false, "active turn")
-	execRunE(t, newTurnEndCmd(), false, "")
+	_ = execRunE(t, newTurnStartCmd(), false, "active turn")
+	_ = execRunE(t, newTurnEndCmd(), false, "")
 
 	store, err := db.Open(filepath.Join(dir, "flightlog.db"))
 	if err != nil {
@@ -209,15 +209,15 @@ func TestTurnCloseCmd_BackfillsCompletedTurnOutcome(t *testing.T) {
 	if _, err := store.Exec(`UPDATE turns SET outcome = NULL WHERE sequence_no = 1`); err != nil {
 		t.Fatalf("clear outcome: %v", err)
 	}
-	store.Close()
+	_ = store.Close()
 
-	execRunE(t, newTurnCloseCmd(), false, "1", "backfilled outcome")
+	_ = execRunE(t, newTurnCloseCmd(), false, "1", "backfilled outcome")
 
 	store, err = db.Open(filepath.Join(dir, "flightlog.db"))
 	if err != nil {
 		t.Fatalf("reopen db: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	var status, outcome string
 	if err := store.QueryRow(`SELECT status, COALESCE(outcome, '') FROM turns WHERE sequence_no = 1`).Scan(&status, &outcome); err != nil {
@@ -243,7 +243,7 @@ func mustReadFile(t *testing.T, path string) []byte {
 
 func TestIngestCmd_RedactsAndPromotesTestPass(t *testing.T) {
 	dir := setupEnv(t)
-	execRunE(t, newTurnStartCmd(), false, "ingest turn")
+	_ = execRunE(t, newTurnStartCmd(), false, "ingest turn")
 
 	cmd := newIngestCmd()
 	var out bytes.Buffer
@@ -256,7 +256,7 @@ func TestIngestCmd_RedactsAndPromotesTestPass(t *testing.T) {
 	  "exit_code": 0,
 	  "stdout": "raw stdout must not be stored"
 	}`))
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 
 	var resp map[string]any
 	if err := json.Unmarshal(out.Bytes(), &resp); err != nil {
@@ -270,7 +270,7 @@ func TestIngestCmd_RedactsAndPromotesTestPass(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	var summary string
 	var dropped int
@@ -302,13 +302,13 @@ func TestIngestCmd_PromotesTestFailureToBlocker(t *testing.T) {
 	  "exit_code": 1,
 	  "dedupe_key": "failed-test-1"
 	}`))
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 
 	store, err := db.Open(filepath.Join(dir, "flightlog.db"))
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	var blockerCount int
 	if err := store.QueryRow(`SELECT COUNT(*) FROM blockers b JOIN entries e ON e.id = b.entry_id WHERE e.title LIKE 'Hook blocker candidate:%'`).Scan(&blockerCount); err != nil {
@@ -330,13 +330,13 @@ func TestIngestCmd_DeduplicatesEvents(t *testing.T) {
 	}`
 	first := newIngestCmd()
 	first.SetIn(strings.NewReader(raw))
-	execRunE(t, first, false)
+	_ = execRunE(t, first, false)
 
 	second := newIngestCmd()
 	var out bytes.Buffer
 	second.SetOut(&out)
 	second.SetIn(strings.NewReader(raw))
-	execRunE(t, second, false)
+	_ = execRunE(t, second, false)
 
 	var resp map[string]any
 	if err := json.Unmarshal(out.Bytes(), &resp); err != nil {
@@ -350,7 +350,7 @@ func TestIngestCmd_DeduplicatesEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	var eventCount, evidenceCount int
 	if err := store.QueryRow(`SELECT COUNT(*) FROM agent_events`).Scan(&eventCount); err != nil {
@@ -385,7 +385,7 @@ func TestHooksPrintCmd_DoesNotMutateConfig(t *testing.T) {
 	if err := cmd.Flags().Set("agent", "codex"); err != nil {
 		t.Fatalf("set agent: %v", err)
 	}
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 	got := out.String()
 	for _, want := range []string{"Codex hook starter kit", "ingest --source codex", "Dropped by ingest"} {
 		if !strings.Contains(got, want) {
@@ -405,7 +405,7 @@ func TestHooksPrintCmd_RejectsUnknownAgent(t *testing.T) {
 	if err := cmd.Flags().Set("agent", "unknown"); err != nil {
 		t.Fatalf("set agent: %v", err)
 	}
-	execRunE(t, cmd, true)
+	_ = execRunE(t, cmd, true)
 }
 
 func TestEvidenceCheckCmd_JSONAdvisory(t *testing.T) {
@@ -420,7 +420,7 @@ func TestEvidenceCheckCmd_JSONAdvisory(t *testing.T) {
 	if err := cmd.Flags().Set("format", "json"); err != nil {
 		t.Fatalf("set format: %v", err)
 	}
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 
 	var got struct {
 		OK      bool `json:"ok"`
@@ -449,7 +449,7 @@ func TestEvidenceCheckCmd_StrictFailsOnPlaceholders(t *testing.T) {
 	if err := cmd.Flags().Set("strict", "true"); err != nil {
 		t.Fatalf("set strict: %v", err)
 	}
-	execRunE(t, cmd, true)
+	_ = execRunE(t, cmd, true)
 }
 
 func TestEvidenceCheckCmd_StrictRejectsPendingExternalAck(t *testing.T) {
@@ -476,7 +476,7 @@ func TestEvidenceCheckCmd_StrictRejectsPendingExternalAck(t *testing.T) {
 	if err := cmd.Flags().Set("strict", "true"); err != nil {
 		t.Fatalf("set strict: %v", err)
 	}
-	execRunE(t, cmd, true)
+	_ = execRunE(t, cmd, true)
 }
 
 func TestEvidenceCheckCmd_AdvisoryWarnsOnDeferredSelfRetro(t *testing.T) {
@@ -490,7 +490,7 @@ func TestEvidenceCheckCmd_AdvisoryWarnsOnDeferredSelfRetro(t *testing.T) {
 	if err := cmd.Flags().Set("root", root); err != nil {
 		t.Fatalf("set root: %v", err)
 	}
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 
 	got := out.String()
 	for _, want := range []string{
@@ -515,7 +515,7 @@ func TestEvidenceCheckCmd_AdvisoryWarnsOnMixedConcreteAndDeferredEvidence(t *tes
 	if err := cmd.Flags().Set("root", root); err != nil {
 		t.Fatalf("set root: %v", err)
 	}
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 
 	got := out.String()
 	for _, want := range []string{
@@ -543,7 +543,7 @@ func TestEvidenceCheckCmd_StrictFailsOnDeferredSelfRetroConcreteCount(t *testing
 	if err := cmd.Flags().Set("strict", "true"); err != nil {
 		t.Fatalf("set strict: %v", err)
 	}
-	execRunE(t, cmd, true)
+	_ = execRunE(t, cmd, true)
 
 	got := out.String()
 	for _, want := range []string{
@@ -574,7 +574,7 @@ func TestEvidenceReportCmd_JSONKeepsPresentAndAddsSemanticStatus(t *testing.T) {
 	if err := cmd.Flags().Set("format", "json"); err != nil {
 		t.Fatalf("set format: %v", err)
 	}
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 
 	var got struct {
 		Metrics []struct {
@@ -628,7 +628,7 @@ func TestEvidenceCheckCmd_PendingAckDoesNotInvalidateConcreteTeamShareMetrics(t 
 	if err := cmd.Flags().Set("strict", "true"); err != nil {
 		t.Fatalf("set strict: %v", err)
 	}
-	execRunE(t, cmd, true)
+	_ = execRunE(t, cmd, true)
 
 	got := out.String()
 	for _, want := range []string{
@@ -663,7 +663,7 @@ func TestEvidenceReportCmd_CitesPlaceholdersAndNextAction(t *testing.T) {
 	if err := cmd.Flags().Set("persona", "team-share"); err != nil {
 		t.Fatalf("set persona: %v", err)
 	}
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 	got := out.String()
 	for _, want := range []string{"persona: team-share", "TODO quote", "evidence_bound_decisions"} {
 		if !strings.Contains(got, want) {
@@ -813,7 +813,7 @@ func mixedConcreteDeferredEvidenceDoc() string {
 func TestReportCmd_Text(t *testing.T) {
 	setupEnv(t)
 	// format defaults to "text", window defaults to "all" (set by StringVar).
-	execRunE(t, newReportCmd(), false)
+	_ = execRunE(t, newReportCmd(), false)
 }
 
 // TestReportCmd_JSON runs report --format json on an empty DB.
@@ -823,7 +823,7 @@ func TestReportCmd_JSON(t *testing.T) {
 	if err := cmd.Flags().Set("format", "json"); err != nil {
 		t.Fatalf("set format flag: %v", err)
 	}
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 }
 
 // TestReportCmd_BadFormat verifies the bad-format error branch.
@@ -833,7 +833,7 @@ func TestReportCmd_BadFormat(t *testing.T) {
 	if err := cmd.Flags().Set("format", "xml"); err != nil {
 		t.Fatalf("set format flag: %v", err)
 	}
-	execRunE(t, cmd, true)
+	_ = execRunE(t, cmd, true)
 }
 
 // TestReportCmd_BadWindow verifies the bad-window error branch.
@@ -843,7 +843,7 @@ func TestReportCmd_BadWindow(t *testing.T) {
 	if err := cmd.Flags().Set("window", "month"); err != nil {
 		t.Fatalf("set window flag: %v", err)
 	}
-	execRunE(t, cmd, true)
+	_ = execRunE(t, cmd, true)
 }
 
 // TestReportCmd_DayWindow runs report with window=day.
@@ -853,7 +853,7 @@ func TestReportCmd_DayWindow(t *testing.T) {
 	if err := cmd.Flags().Set("window", "day"); err != nil {
 		t.Fatalf("set window flag: %v", err)
 	}
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 }
 
 func TestAttentionCmd_Text(t *testing.T) {
@@ -863,7 +863,7 @@ func TestAttentionCmd_Text(t *testing.T) {
 	cmd := newAttentionCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 
 	got := out.String()
 	for _, want := range []string{"NTTS Flightlog attention", "주의 필요", "근거 없는 결정 유지", "다음:"} {
@@ -883,7 +883,7 @@ func TestAttentionCmd_JSON(t *testing.T) {
 	}
 	var out bytes.Buffer
 	cmd.SetOut(&out)
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 
 	var got struct {
 		Summary struct {
@@ -912,13 +912,13 @@ func TestAttentionCmd_BadFlags(t *testing.T) {
 	if err := cmd.Flags().Set("format", "xml"); err != nil {
 		t.Fatalf("set format: %v", err)
 	}
-	execRunE(t, cmd, true)
+	_ = execRunE(t, cmd, true)
 
 	cmd = newAttentionCmd()
 	if err := cmd.Flags().Set("window", "month"); err != nil {
 		t.Fatalf("set window: %v", err)
 	}
-	execRunE(t, cmd, true)
+	_ = execRunE(t, cmd, true)
 }
 
 func TestHandoffCmd_Text(t *testing.T) {
@@ -928,7 +928,7 @@ func TestHandoffCmd_Text(t *testing.T) {
 	cmd := newHandoffCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 
 	got := out.String()
 	for _, want := range []string{
@@ -959,7 +959,7 @@ func TestHandoffCmd_JSON(t *testing.T) {
 	}
 	var out bytes.Buffer
 	cmd.SetOut(&out)
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 
 	var got struct {
 		ActiveTurn struct {
@@ -1004,7 +1004,7 @@ func TestHandoffCmd_BadFormat(t *testing.T) {
 	if err := cmd.Flags().Set("format", "xml"); err != nil {
 		t.Fatalf("set format: %v", err)
 	}
-	execRunE(t, cmd, true)
+	_ = execRunE(t, cmd, true)
 }
 
 func TestHandoffCmd_CurrentSessionOnly(t *testing.T) {
@@ -1025,7 +1025,7 @@ func TestHandoffCmd_CurrentSessionOnly(t *testing.T) {
 	cmd := newHandoffCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 
 	got := out.String()
 	if strings.Contains(got, "old stale decision") {
@@ -1046,7 +1046,7 @@ func TestShareCmd_Markdown(t *testing.T) {
 	cmd := newShareCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 
 	got := out.String()
 	for _, want := range []string{
@@ -1076,7 +1076,7 @@ func TestShareCmd_JSON(t *testing.T) {
 	}
 	var out bytes.Buffer
 	cmd.SetOut(&out)
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 
 	var got struct {
 		Summary struct {
@@ -1107,13 +1107,13 @@ func TestShareCmd_BadFlags(t *testing.T) {
 	if err := cmd.Flags().Set("format", "text"); err != nil {
 		t.Fatalf("set format: %v", err)
 	}
-	execRunE(t, cmd, true)
+	_ = execRunE(t, cmd, true)
 
 	cmd = newShareCmd()
 	if err := cmd.Flags().Set("window", "month"); err != nil {
 		t.Fatalf("set window: %v", err)
 	}
-	execRunE(t, cmd, true)
+	_ = execRunE(t, cmd, true)
 }
 
 func seedHandoffFixture(t *testing.T) {
@@ -1160,7 +1160,7 @@ func TestDoctorCmd(t *testing.T) {
 	cmd := newDoctorCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
-	execRunE(t, cmd, false)
+	_ = execRunE(t, cmd, false)
 	got := out.String()
 	for _, want := range []string{"NTTS Flightlog doctor", "binary:", "db: ok", "migrations:", "tmux_pane:", "skill_wrappers:"} {
 		if !strings.Contains(got, want) {
@@ -1175,7 +1175,7 @@ func TestViewCmd_AllModes(t *testing.T) {
 	for _, mode := range []string{"flat", "turns", "decisions", "blockers", "report", "visual"} {
 		t.Run(mode, func(t *testing.T) {
 			setupEnv(t) // fresh dir per subtest
-			execRunE(t, newViewCmd(), false, mode)
+			_ = execRunE(t, newViewCmd(), false, mode)
 		})
 	}
 }
@@ -1183,25 +1183,25 @@ func TestViewCmd_AllModes(t *testing.T) {
 // TestViewCmd_Default (no args → flat).
 func TestViewCmd_Default(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newViewCmd(), false)
+	_ = execRunE(t, newViewCmd(), false)
 }
 
 // TestAutoCmd creates a session if none is present.
 func TestAutoCmd(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newAutoCmd(), false, "자동 세션")
+	_ = execRunE(t, newAutoCmd(), false, "자동 세션")
 }
 
 // TestStartCmd starts a new session without TMUX.
 func TestStartCmd(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newStartCmd(), false, "테스트 세션")
+	_ = execRunE(t, newStartCmd(), false, "테스트 세션")
 }
 
 // TestStartCmd_NoTitle uses the default title.
 func TestStartCmd_NoTitle(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newStartCmd(), false)
+	_ = execRunE(t, newStartCmd(), false)
 }
 
 // TestCommandChain_FullWorkflow is the primary integration test:
@@ -1317,7 +1317,7 @@ func TestCommandChain_FullWorkflow(t *testing.T) {
 // TestRefreshAnchorCmd_NoTurn verifies the "no active turn" error path.
 func TestRefreshAnchorCmd_NoTurn(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newRefreshAnchorCmd(), true) // expects error
+	_ = execRunE(t, newRefreshAnchorCmd(), true) // expects error
 }
 
 // TestDriftCheckCmd_WithTurn runs drift-check after start+turn-start.
@@ -1333,13 +1333,13 @@ func TestDriftCheckCmd_WithTurn(t *testing.T) {
 	if err := tsCmd.RunE(tsCmd, []string{"드리프트 턴"}); err != nil {
 		t.Fatalf("turn-start: %v", err)
 	}
-	execRunE(t, newDriftCheckCmd(), false)
+	_ = execRunE(t, newDriftCheckCmd(), false)
 }
 
 // TestDriftCheckCmd_NoTurn verifies the no-turn error path for drift-check.
 func TestDriftCheckCmd_NoTurn(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newDriftCheckCmd(), true)
+	_ = execRunE(t, newDriftCheckCmd(), true)
 }
 
 // TestRefreshAnchorCmd_WithTurnNoAnchor runs refresh-anchor on a turn
@@ -1353,7 +1353,7 @@ func TestRefreshAnchorCmd_WithTurnNoAnchor(t *testing.T) {
 		t.Fatalf("turn-start: %v", err)
 	}
 	// No intent set → refresh-anchor prints "no anchor" message, no error.
-	execRunE(t, newRefreshAnchorCmd(), false)
+	_ = execRunE(t, newRefreshAnchorCmd(), false)
 }
 
 // TestExecute calls the exported Execute function (covers the wrapper).
@@ -1377,13 +1377,13 @@ func TestViewCmd_TUI_NonInteractive(t *testing.T) {
 	if err := cmd.Flags().Set("noninteractive", "true"); err != nil {
 		t.Fatalf("set noninteractive: %v", err)
 	}
-	execRunE(t, cmd, false, "tui")
+	_ = execRunE(t, cmd, false, "tui")
 }
 
 // TestViewCmd_UnknownMode verifies the unknown-mode error branch.
 func TestViewCmd_UnknownMode(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newViewCmd(), true, "xml-view")
+	_ = execRunE(t, newViewCmd(), true, "xml-view")
 }
 
 // ── turn-path extra branches ──────────────────────────────────────────────
@@ -1397,26 +1397,26 @@ func TestTurnPathCmd_ExplicitN(t *testing.T) {
 	if err := newTurnStartCmd().RunE(newTurnStartCmd(), []string{"턴 경로"}); err != nil {
 		t.Fatalf("turn-start: %v", err)
 	}
-	execRunE(t, newTurnPathCmd(), false, "1")
+	_ = execRunE(t, newTurnPathCmd(), false, "1")
 }
 
 // TestTurnPathCmd_InvalidN returns an error for a non-numeric argument.
 func TestTurnPathCmd_InvalidN(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newTurnPathCmd(), true, "abc")
+	_ = execRunE(t, newTurnPathCmd(), true, "abc")
 }
 
 // TestTurnPathCmd_ZeroArg returns an error for "0" (n < 1 branch).
 func TestTurnPathCmd_ZeroArg(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newTurnPathCmd(), true, "0")
+	_ = execRunE(t, newTurnPathCmd(), true, "0")
 }
 
 // TestTurnPathCmd_NoActiveTurn returns an error when no turn is active.
 func TestTurnPathCmd_NoActiveTurn(t *testing.T) {
 	setupEnv(t)
 	// No turn started → CurrentTurnNumber() returns 0.
-	execRunE(t, newTurnPathCmd(), true)
+	_ = execRunE(t, newTurnPathCmd(), true)
 }
 
 // ── drift-check extra branches ────────────────────────────────────────────
@@ -1441,7 +1441,7 @@ func TestDriftCheckCmd_WithConstraints_NoDrift(t *testing.T) {
 	if err := newEntryCmd().RunE(newEntryCmd(), []string{"항목 진행 중"}); err != nil {
 		t.Fatalf("entry: %v", err)
 	}
-	execRunE(t, newDriftCheckCmd(), false)
+	_ = execRunE(t, newDriftCheckCmd(), false)
 }
 
 // TestDriftCheckCmd_WithDrift exercises the drift-detected path (blocker inserted).
@@ -1464,7 +1464,7 @@ func TestDriftCheckCmd_WithDrift(t *testing.T) {
 	if err := newEntryCmd().RunE(newEntryCmd(), []string{"전혀 다른 작업"}); err != nil {
 		t.Fatalf("entry: %v", err)
 	}
-	execRunE(t, newDriftCheckCmd(), false)
+	_ = execRunE(t, newDriftCheckCmd(), false)
 }
 
 // TestDriftCheckCmd_ExplicitTurnID_NotFound returns an error for an unknown turn ID.
@@ -1473,7 +1473,7 @@ func TestDriftCheckCmd_ExplicitTurnID_NotFound(t *testing.T) {
 	if err := newStartCmd().RunE(newStartCmd(), []string{"세션"}); err != nil {
 		t.Fatalf("start: %v", err)
 	}
-	execRunE(t, newDriftCheckCmd(), true, "nonexistent-turn-uuid")
+	_ = execRunE(t, newDriftCheckCmd(), true, "nonexistent-turn-uuid")
 }
 
 // ── evidence --link branch ────────────────────────────────────────────────
@@ -1494,7 +1494,7 @@ func TestEvidenceCmd_WithLink(t *testing.T) {
 	if err := cmd.Flags().Set("link", "아키텍처"); err != nil {
 		t.Fatalf("set link: %v", err)
 	}
-	execRunE(t, cmd, false, "링크된 근거")
+	_ = execRunE(t, cmd, false, "링크된 근거")
 
 	s, err := openSession()
 	if err != nil {
@@ -1607,13 +1607,13 @@ func TestDecisionSupersedeCmd_AmbiguousOldDecision(t *testing.T) {
 // TestMigrateCmd_Down exercises the "down" direction branch.
 func TestMigrateCmd_Down(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newMigrateCmd(), false, "down")
+	_ = execRunE(t, newMigrateCmd(), false, "down")
 }
 
 // TestMigrateCmd_InvalidDirection hits the default → cmd.Help() branch.
 func TestMigrateCmd_InvalidDirection(t *testing.T) {
 	setupEnv(t)
-	execRunE(t, newMigrateCmd(), false, "sideways")
+	_ = execRunE(t, newMigrateCmd(), false, "sideways")
 }
 
 // ── mode with detail ──────────────────────────────────────────────────────
@@ -1624,7 +1624,7 @@ func TestModeCmd_WithDetail(t *testing.T) {
 	if err := newStartCmd().RunE(newStartCmd(), []string{"모드 세션"}); err != nil {
 		t.Fatalf("start: %v", err)
 	}
-	execRunE(t, newModeCmd(), false, "코딩", "자세한 모드 설명")
+	_ = execRunE(t, newModeCmd(), false, "코딩", "자세한 모드 설명")
 }
 
 // ── auto with existing session ────────────────────────────────────────────
@@ -1634,9 +1634,9 @@ func TestModeCmd_WithDetail(t *testing.T) {
 func TestAutoCmd_ExistingSession(t *testing.T) {
 	setupEnv(t)
 	// First call: creates the session.
-	execRunE(t, newAutoCmd(), false, "첫 번째 자동")
+	_ = execRunE(t, newAutoCmd(), false, "첫 번째 자동")
 	// Second call: session already exists → takes existing-session branch.
-	execRunE(t, newAutoCmd(), false, "두 번째 자동")
+	_ = execRunE(t, newAutoCmd(), false, "두 번째 자동")
 }
 
 // ── blocker with detail ───────────────────────────────────────────────────
@@ -1647,7 +1647,7 @@ func TestBlockerCmd_WithDetail(t *testing.T) {
 	if err := newStartCmd().RunE(newStartCmd(), []string{"블로커 세션"}); err != nil {
 		t.Fatalf("start: %v", err)
 	}
-	execRunE(t, newBlockerCmd(), false, "블로커 제목", "블로커 상세 내용")
+	_ = execRunE(t, newBlockerCmd(), false, "블로커 제목", "블로커 상세 내용")
 }
 
 func TestBlockerResolveCmd_ByTitle(t *testing.T) {
@@ -1729,5 +1729,5 @@ func TestEvidenceCmd_WithDetail(t *testing.T) {
 	if err := newStartCmd().RunE(newStartCmd(), []string{"근거 상세 세션"}); err != nil {
 		t.Fatalf("start: %v", err)
 	}
-	execRunE(t, newEvidenceCmd(), false, "근거 제목", "근거 상세 내용")
+	_ = execRunE(t, newEvidenceCmd(), false, "근거 제목", "근거 상세 내용")
 }

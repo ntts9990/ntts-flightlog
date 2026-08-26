@@ -106,17 +106,12 @@ func AppendEntryForLane(c *Config, lane, kind, title, detail string) error {
 // formatEntryBlock returns the v1-format `### TS [kind] title\ndetail` block.
 func formatEntryBlock(kind, title, detail string) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("\n### %s [%s] %s\n", Timestamp(), kind, title))
+	fmt.Fprintf(&sb, "\n### %s [%s] %s\n", Timestamp(), kind, title)
 	if detail != "" {
 		sb.WriteString(detail)
 		sb.WriteString("\n")
 	}
 	return sb.String()
-}
-
-// appendToCurrentTurn appends an entry to the current turn file if one is active.
-func appendToCurrentTurn(c *Config, kind, title, detail string) error {
-	return appendToCurrentTurnForLane(c, "", kind, title, detail)
 }
 
 func appendToCurrentTurnForLane(c *Config, lane, kind, title, detail string) error {
@@ -159,7 +154,7 @@ func ReplaceStatus(c *Config, label, focus, nextStep string) error {
 	var elapsed string
 	if raw := ReadFile(c.SessionStart); raw != "" {
 		var startEpoch int64
-		fmt.Sscanf(raw, "%d", &startEpoch)
+		_, _ = fmt.Sscanf(raw, "%d", &startEpoch)
 		elapsed = FormatDuration(time.Now().Unix() - startEpoch)
 	} else {
 		elapsed = "unknown"

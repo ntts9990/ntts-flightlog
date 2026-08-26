@@ -69,7 +69,7 @@ func findDecisionEntryID(s *session, query string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("find decision: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	type match struct {
 		id    string

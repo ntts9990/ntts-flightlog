@@ -42,7 +42,7 @@ func newTurnEndCmd() *cobra.Command {
 			var elapsedMS int64
 			if raw := worklog.ReadFile(s.cfg.LaneTurnStartFile(s.lane)); raw != "" {
 				var startEpoch int64
-				fmt.Sscanf(raw, "%d", &startEpoch)
+				_, _ = fmt.Sscanf(raw, "%d", &startEpoch)
 				elapsed := time.Now().Unix() - startEpoch
 				elapsedMS = elapsed * 1000
 				elapsedStr = worklog.FormatDuration(elapsed)

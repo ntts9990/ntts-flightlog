@@ -68,7 +68,7 @@ func RenderFlat(c *Config, w io.Writer) error {
 	data, err := os.ReadFile(c.MainMd)
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Fprintln(w, "(main.md 파일이 없습니다. flightlog start로 시작하세요.)")
+			_, _ = fmt.Fprintln(w, "(main.md 파일이 없습니다. flightlog start로 시작하세요.)")
 			return nil
 		}
 		return err
@@ -82,7 +82,7 @@ func RenderFlat(c *Config, w io.Writer) error {
 func RenderTurns(c *Config, w io.Writer) error {
 	entries, err := filepath.Glob(filepath.Join(c.TurnsDir, "turn-*.md"))
 	if err != nil || len(entries) == 0 {
-		fmt.Fprintln(w, "(turn 파일이 아직 없습니다. turn-start로 첫 턴을 시작하세요.)")
+		_, _ = fmt.Fprintln(w, "(turn 파일이 아직 없습니다. turn-start로 첫 턴을 시작하세요.)")
 		return nil
 	}
 	sort.Slice(entries, func(i, j int) bool {
@@ -95,7 +95,7 @@ func RenderTurns(c *Config, w io.Writer) error {
 			continue
 		}
 		renderMarkdownANSI(string(data), absTurns, w)
-		fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w)
 	}
 	return nil
 }
@@ -128,26 +128,26 @@ func renderMarkdownANSI(content, absTurns string, w io.Writer) {
 	for _, line := range lines {
 		switch {
 		case strings.HasPrefix(line, "# "):
-			fmt.Fprintln(w, bold+colorTitle+line+reset)
+			_, _ = fmt.Fprintln(w, bold+colorTitle+line+reset)
 		case strings.HasPrefix(line, "## "):
-			fmt.Fprintln(w)
-			fmt.Fprintln(w, bold+colorSection+line+reset)
+			_, _ = fmt.Fprintln(w)
+			_, _ = fmt.Fprintln(w, bold+colorSection+line+reset)
 		case strings.HasPrefix(line, "업데이트:"), strings.HasPrefix(line, "시작:"):
-			fmt.Fprintln(w, dim+line+reset)
+			_, _ = fmt.Fprintln(w, dim+line+reset)
 		// A.5 TIA anchor lines — render in cyan.
 		case strings.HasPrefix(line, "⚓ 의도:"),
 			strings.HasPrefix(line, "📐 제약:"),
 			strings.HasPrefix(line, "✅ 완료조건:"),
 			strings.HasPrefix(line, "─── ⚓"):
-			fmt.Fprintln(w, bold+colorAnchor+line+reset)
+			_, _ = fmt.Fprintln(w, bold+colorAnchor+line+reset)
 		case entryHeaderRe.MatchString(line):
 			m := entryHeaderRe.FindStringSubmatch(line)
 			ts, kind, title := m[1], m[2], m[3]
 			renderEntryHeader(w, ts, kind, title, absTurns)
 		case len(line) > 0 && !strings.HasPrefix(line, "#") && !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "\t"):
-			fmt.Fprintln(w, dim+line+reset)
+			_, _ = fmt.Fprintln(w, dim+line+reset)
 		default:
-			fmt.Fprintln(w, line)
+			_, _ = fmt.Fprintln(w, line)
 		}
 	}
 }
@@ -158,39 +158,39 @@ func renderEntryHeader(w io.Writer, ts, kind, title, absTurns string) {
 		n, _ := strconv.Atoi(m[1])
 		color := turnColorFor(n)
 		url := "file://" + absTurns + "/turn-" + m[1] + ".md"
-		fmt.Fprintln(w, color+"■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■"+reset)
-		fmt.Fprintf(w, "%s%s▶ %s  [%s]%s\n", bold, color, ts, kind, reset)
-		fmt.Fprintf(w, "%s%s  %s%s\n", bold, color, osc8Link(url, title), reset)
-		fmt.Fprintln(w, color+"────────────────────────────────"+reset)
+		_, _ = fmt.Fprintln(w, color+"■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■"+reset)
+		_, _ = fmt.Fprintf(w, "%s%s▶ %s  [%s]%s\n", bold, color, ts, kind, reset)
+		_, _ = fmt.Fprintf(w, "%s%s  %s%s\n", bold, color, osc8Link(url, title), reset)
+		_, _ = fmt.Fprintln(w, color+"────────────────────────────────"+reset)
 		return
 	}
 	if m := turnEndRe.FindStringSubmatch(kind); m != nil {
 		n, _ := strconv.Atoi(m[1])
 		color := turnColorFor(n)
-		fmt.Fprintln(w, color+"────────────────────────────────"+reset)
-		fmt.Fprintf(w, "%s%s■ %s  [%s]%s\n", bold, color, ts, kind, reset)
-		fmt.Fprintf(w, "%s%s  %s%s\n", bold, color, title, reset)
+		_, _ = fmt.Fprintln(w, color+"────────────────────────────────"+reset)
+		_, _ = fmt.Fprintf(w, "%s%s■ %s  [%s]%s\n", bold, color, ts, kind, reset)
+		_, _ = fmt.Fprintf(w, "%s%s  %s%s\n", bold, color, title, reset)
 		return
 	}
 	switch kind {
 	case "mode":
-		fmt.Fprintf(w, "%s%s▣ %s  [%s]%s\n", bold, colorMode, ts, kind, reset)
-		fmt.Fprintf(w, "%s%s  %s%s\n", bold, colorMode, title, reset)
+		_, _ = fmt.Fprintf(w, "%s%s▣ %s  [%s]%s\n", bold, colorMode, ts, kind, reset)
+		_, _ = fmt.Fprintf(w, "%s%s  %s%s\n", bold, colorMode, title, reset)
 	case "entry":
-		fmt.Fprintf(w, "%s%s◆ %s  [%s]%s\n", bold, colorEntry, ts, kind, reset)
-		fmt.Fprintf(w, "%s%s  %s%s\n", bold, colorEntry, title, reset)
+		_, _ = fmt.Fprintf(w, "%s%s◆ %s  [%s]%s\n", bold, colorEntry, ts, kind, reset)
+		_, _ = fmt.Fprintf(w, "%s%s  %s%s\n", bold, colorEntry, title, reset)
 	case "evidence":
-		fmt.Fprintf(w, "%s%s✓ %s  [%s]%s\n", bold, colorEvidence, ts, kind, reset)
-		fmt.Fprintf(w, "%s%s  %s%s\n", bold, colorEvidence, title, reset)
+		_, _ = fmt.Fprintf(w, "%s%s✓ %s  [%s]%s\n", bold, colorEvidence, ts, kind, reset)
+		_, _ = fmt.Fprintf(w, "%s%s  %s%s\n", bold, colorEvidence, title, reset)
 	case "decision":
-		fmt.Fprintf(w, "%s%s◆ %s  [%s]%s\n", bold, colorDecision, ts, kind, reset)
-		fmt.Fprintf(w, "%s%s  %s%s\n", bold, colorDecision, title, reset)
+		_, _ = fmt.Fprintf(w, "%s%s◆ %s  [%s]%s\n", bold, colorDecision, ts, kind, reset)
+		_, _ = fmt.Fprintf(w, "%s%s  %s%s\n", bold, colorDecision, title, reset)
 	case "blocker":
-		fmt.Fprintf(w, "%s%s!! %s  [%s]%s\n", bold, colorBlocker, ts, kind, reset)
-		fmt.Fprintf(w, "%s%s  %s%s\n", bold, colorBlocker, title, reset)
+		_, _ = fmt.Fprintf(w, "%s%s!! %s  [%s]%s\n", bold, colorBlocker, ts, kind, reset)
+		_, _ = fmt.Fprintf(w, "%s%s  %s%s\n", bold, colorBlocker, title, reset)
 	default:
-		fmt.Fprintf(w, "%s◆ %s  [%s]%s\n", bold, ts, kind, reset)
-		fmt.Fprintf(w, "  %s\n", title)
+		_, _ = fmt.Fprintf(w, "%s◆ %s  [%s]%s\n", bold, ts, kind, reset)
+		_, _ = fmt.Fprintf(w, "  %s\n", title)
 	}
 }
 
@@ -205,11 +205,11 @@ func filterEntriesByKind(content, kind string, w io.Writer) {
 				m := entryHeaderRe.FindStringSubmatch(line)
 				ts, title := m[1], m[3]
 				if kind == "blocker" {
-					fmt.Fprintf(w, "%s%s!! %s%s\n", bold, colorBlocker, ts, reset)
-					fmt.Fprintf(w, "%s%s  %s%s\n", bold, colorBlocker, title, reset)
+					_, _ = fmt.Fprintf(w, "%s%s!! %s%s\n", bold, colorBlocker, ts, reset)
+					_, _ = fmt.Fprintf(w, "%s%s  %s%s\n", bold, colorBlocker, title, reset)
 				} else {
-					fmt.Fprintf(w, "%s%s◆ %s%s\n", bold, colorDecision, ts, reset)
-					fmt.Fprintf(w, "%s%s  %s%s\n", bold, colorDecision, title, reset)
+					_, _ = fmt.Fprintf(w, "%s%s◆ %s%s\n", bold, colorDecision, ts, reset)
+					_, _ = fmt.Fprintf(w, "%s%s  %s%s\n", bold, colorDecision, title, reset)
 				}
 				printing = true
 			} else {
@@ -218,7 +218,7 @@ func filterEntriesByKind(content, kind string, w io.Writer) {
 			continue
 		}
 		if printing && strings.TrimSpace(line) != "" && !strings.HasPrefix(line, "### ") {
-			fmt.Fprintln(w, dim+line+reset)
+			_, _ = fmt.Fprintln(w, dim+line+reset)
 		}
 	}
 }

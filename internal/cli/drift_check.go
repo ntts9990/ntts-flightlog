@@ -35,7 +35,7 @@ func newDriftCheckCmd() *cobra.Command {
 				turnID = s.activeTurnID()
 			}
 			if turnID == "" {
-				return fmt.Errorf("활성 턴이 없습니다. turn-start로 시작하세요.")
+				return fmt.Errorf("활성 턴이 없습니다. turn-start로 시작하세요")
 			}
 
 			// Fetch turn anchor.
@@ -70,7 +70,7 @@ func newDriftCheckCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("drift-check: query entries: %w", err)
 			}
-			defer rows.Close()
+			defer func() { _ = rows.Close() }()
 
 			type entryCandidate struct {
 				id     string

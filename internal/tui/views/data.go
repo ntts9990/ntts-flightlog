@@ -140,7 +140,7 @@ func loadSessions(d *db.DB) ([]Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var ss []Session
 	for rows.Next() {
 		var s Session
@@ -161,7 +161,7 @@ func loadTurns(d *db.DB) ([]Turn, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var ts []Turn
 	for rows.Next() {
 		var t Turn
@@ -184,7 +184,7 @@ func loadEntries(d *db.DB) ([]Entry, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var es []Entry
 	for rows.Next() {
 		var e Entry
@@ -207,7 +207,7 @@ func loadBlockers(d *db.DB) ([]Blocker, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var bs []Blocker
 	for rows.Next() {
 		var b Blocker
@@ -229,7 +229,7 @@ func loadDecisionEvidenceLinks(d *db.DB) ([]DecisionEvidenceLink, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var links []DecisionEvidenceLink
 	for rows.Next() {
 		var link DecisionEvidenceLink
@@ -248,7 +248,7 @@ func loadDecisionStates(d *db.DB) ([]DecisionState, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var states []DecisionState
 	for rows.Next() {
 		var state DecisionState

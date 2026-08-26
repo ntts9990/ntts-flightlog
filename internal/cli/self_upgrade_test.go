@@ -317,7 +317,7 @@ func TestRunSelfUpgrade_DownloadVerifyExtract(t *testing.T) {
 	// We verify up to extract; actual rename is skipped via dry-run.
 	// Test verifyChecksum + extractFromTarGz directly.
 	archivePath := writeTempFile(t, archiveBytes)
-	defer os.Remove(archivePath)
+	defer func() { _ = os.Remove(archivePath) }()
 
 	// verifyChecksum
 	if err := verifyChecksum(archivePath, aname, srv.URL+"/checksums"); err != nil {
@@ -329,7 +329,7 @@ func TestRunSelfUpgrade_DownloadVerifyExtract(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extractFromTarGz: %v", err)
 	}
-	defer os.Remove(binPath)
+	defer func() { _ = os.Remove(binPath) }()
 
 	got, err := os.ReadFile(binPath)
 	if err != nil {
@@ -380,7 +380,7 @@ func TestRunSelfUpgrade_BrewRefusal(t *testing.T) {
 	cmd, out := testCmd()
 	// Simulate the brew guard block in isolation.
 	if isHomebrewPath("/opt/homebrew/bin/flightlog") {
-		fmt.Fprintln(cmd.OutOrStdout(), "Use: brew upgrade ntts9990/tap/flightlog")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Use: brew upgrade ntts9990/tap/flightlog")
 		osExit(1)
 	}
 	if !exited {
@@ -405,7 +405,7 @@ func TestDownloadToTemp_HappyPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("downloadToTemp: %v", err)
 	}
-	defer os.Remove(path)
+	defer func() { _ = os.Remove(path) }()
 
 	got, err := os.ReadFile(path)
 	if err != nil {
@@ -440,10 +440,10 @@ func TestVerifyChecksum_Match(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := f.Write(content); err != nil {
-		f.Close()
+		_ = f.Close()
 		t.Fatal(err)
 	}
-	f.Close()
+	_ = f.Close()
 
 	filename := "flightlog_1.0.0_linux_amd64.tar.gz"
 	checksumData := checksum + "  " + filename + "\n"
@@ -464,10 +464,10 @@ func TestVerifyChecksum_Mismatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := f.Write(content); err != nil {
-		f.Close()
+		_ = f.Close()
 		t.Fatal(err)
 	}
-	f.Close()
+	_ = f.Close()
 
 	filename := "flightlog_1.0.0_linux_amd64.tar.gz"
 	wrongChecksum := strings.Repeat("0", 64)
@@ -539,7 +539,7 @@ func writeTempFile(t *testing.T, content []byte) string {
 	if err != nil {
 		t.Fatalf("create temp: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	if _, err := f.Write(content); err != nil {
 		t.Fatalf("write temp: %v", err)
 	}

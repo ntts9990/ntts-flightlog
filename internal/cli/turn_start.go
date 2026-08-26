@@ -136,13 +136,13 @@ func buildAnchorBlock(intent string, constraints []string, doneWhen string) stri
 	}
 	var sb strings.Builder
 	if intent != "" {
-		sb.WriteString(fmt.Sprintf("⚓ 의도: %s\n", intent))
+		fmt.Fprintf(&sb, "⚓ 의도: %s\n", intent)
 	}
 	if len(constraints) > 0 {
-		sb.WriteString(fmt.Sprintf("📐 제약: %s\n", strings.Join(constraints, " | ")))
+		fmt.Fprintf(&sb, "📐 제약: %s\n", strings.Join(constraints, " | "))
 	}
 	if doneWhen != "" {
-		sb.WriteString(fmt.Sprintf("✅ 완료조건: %s\n", doneWhen))
+		fmt.Fprintf(&sb, "✅ 완료조건: %s\n", doneWhen)
 	}
 	return sb.String()
 }
