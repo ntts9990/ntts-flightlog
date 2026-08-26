@@ -148,7 +148,7 @@ func BuildDedupeKey(parts ...any) string {
 		if part == nil {
 			continue
 		}
-		b.WriteString(fmt.Sprint(part))
+		fmt.Fprint(&b, part)
 		b.WriteByte('\x00')
 	}
 	sum := sha256.Sum256([]byte(b.String()))

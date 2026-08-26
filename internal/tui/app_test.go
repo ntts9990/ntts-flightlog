@@ -27,11 +27,8 @@ func makeModel(data *views.WorklogData) Model {
 // contentForData returns rendered content for given data without touching m.vp
 // (avoids uninitialized viewport issues in tests).
 func (m Model) contentForData(data *views.WorklogData) string {
-	saved := m.data
 	m.data = data
-	c := m.currentContent()
-	m.data = saved
-	return c
+	return m.currentContent()
 }
 
 // sendKey feeds a key message through Model.Update and returns the new Model.

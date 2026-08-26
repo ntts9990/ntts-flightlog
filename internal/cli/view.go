@@ -61,7 +61,7 @@ TUI flags:
 				if err != nil {
 					return fmt.Errorf("view tui: open db: %w", err)
 				}
-				defer d.Close()
+				defer func() { _ = d.Close() }()
 
 				if nonInteractive {
 					// Render a single view to stdout and exit — used for
@@ -71,7 +71,7 @@ TUI flags:
 						return fmt.Errorf("view tui --noninteractive: load: %w", err)
 					}
 					content := tui.RenderView(data, tuiView, cfg.TurnsDir)
-					fmt.Fprint(w, content)
+					_, _ = fmt.Fprint(w, content)
 					return nil
 				}
 
@@ -97,12 +97,12 @@ func renderSQLiteView(cfg *worklog.Config, viewName string, w *os.File) error {
 	if err != nil {
 		return fmt.Errorf("view %s: open db: %w", viewName, err)
 	}
-	defer d.Close()
+	defer func() { _ = d.Close() }()
 
 	data, err := tuiviews.LoadAll(d)
 	if err != nil {
 		return fmt.Errorf("view %s: load: %w", viewName, err)
 	}
-	fmt.Fprint(w, tui.RenderView(data, viewName, cfg.TurnsDir))
+	_, _ = fmt.Fprint(w, tui.RenderView(data, viewName, cfg.TurnsDir))
 	return nil
 }

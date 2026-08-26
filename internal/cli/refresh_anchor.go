@@ -40,7 +40,7 @@ anchor_last_shown_at 컬럼이 현재 시각으로 갱신됩니다.`,
 				turnID = s.activeTurnID()
 			}
 			if turnID == "" {
-				return fmt.Errorf("활성 턴이 없습니다. turn-start로 시작하세요.")
+				return fmt.Errorf("활성 턴이 없습니다. turn-start로 시작하세요")
 			}
 
 			// Fetch anchor fields.
@@ -81,16 +81,16 @@ func renderAnchorBlock(row anchorRow) string {
 	var sb strings.Builder
 	sb.WriteString("─── ⚓ Turn Intent Anchor ───────────────────\n")
 	if row.intent.Valid && row.intent.String != "" {
-		sb.WriteString(fmt.Sprintf("⚓ 의도: %s\n", row.intent.String))
+		fmt.Fprintf(&sb, "⚓ 의도: %s\n", row.intent.String)
 	}
 	if row.constraintsJSON.Valid && row.constraintsJSON.String != "" {
 		var constraints []string
 		if err := json.Unmarshal([]byte(row.constraintsJSON.String), &constraints); err == nil && len(constraints) > 0 {
-			sb.WriteString(fmt.Sprintf("📐 제약: %s\n", strings.Join(constraints, " | ")))
+			fmt.Fprintf(&sb, "📐 제약: %s\n", strings.Join(constraints, " | "))
 		}
 	}
 	if row.doneWhen.Valid && row.doneWhen.String != "" {
-		sb.WriteString(fmt.Sprintf("✅ 완료조건: %s\n", row.doneWhen.String))
+		fmt.Fprintf(&sb, "✅ 완료조건: %s\n", row.doneWhen.String)
 	}
 	sb.WriteString("────────────────────────────────────────────\n")
 	return sb.String()

@@ -612,10 +612,10 @@ func TestSha256File_HappyPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := f.WriteString("hello"); err != nil {
-		f.Close()
+		_ = f.Close()
 		t.Fatal(err)
 	}
-	f.Close()
+	_ = f.Close()
 
 	got, err := sha256File(f.Name())
 	if err != nil {
@@ -645,7 +645,7 @@ func makeTarGz(t *testing.T, name string, content []byte) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	gw := gzip.NewWriter(f)
 	tw := tar.NewWriter(gw)
@@ -675,7 +675,7 @@ func makeZip(t *testing.T, name string, content []byte) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	zw := zip.NewWriter(f)
 	w, err := zw.Create(name)
@@ -697,7 +697,7 @@ func TestExtractFromTarGz_HappyPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extractFromTarGz: %v", err)
 	}
-	defer os.Remove(outPath)
+	defer func() { _ = os.Remove(outPath) }()
 	data, err := os.ReadFile(outPath)
 	if err != nil {
 		t.Fatalf("read extracted file: %v", err)
@@ -721,7 +721,7 @@ func TestExtractFromTarGz_InvalidGzip(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, _ = f.WriteString("not-a-gzip")
-	f.Close()
+	_ = f.Close()
 	_, err = extractFromTarGz(f.Name())
 	if err == nil {
 		t.Error("extractFromTarGz bad gzip: expected error")
@@ -743,7 +743,7 @@ func TestExtractFromZip_HappyPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extractFromZip: %v", err)
 	}
-	defer os.Remove(outPath)
+	defer func() { _ = os.Remove(outPath) }()
 	data, err := os.ReadFile(outPath)
 	if err != nil {
 		t.Fatalf("read extracted exe: %v", err)
@@ -767,7 +767,7 @@ func TestExtractFromZip_InvalidZip(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, _ = f.WriteString("not-a-zip")
-	f.Close()
+	_ = f.Close()
 	_, err = extractFromZip(f.Name())
 	if err == nil {
 		t.Error("extractFromZip bad zip: expected error")
@@ -782,7 +782,7 @@ func TestExtractBinary_Linux(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extractBinary linux: %v", err)
 	}
-	defer os.Remove(outPath)
+	defer func() { _ = os.Remove(outPath) }()
 }
 
 func TestExtractBinary_Windows(t *testing.T) {
@@ -791,7 +791,7 @@ func TestExtractBinary_Windows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extractBinary windows: %v", err)
 	}
-	defer os.Remove(outPath)
+	defer func() { _ = os.Remove(outPath) }()
 }
 
 // ── extractFromTarGz with directory entry ─────────────────────────────────
@@ -853,7 +853,7 @@ func TestExtractFromTarGz_WithDirEntry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extractFromTarGz with dir: %v", err)
 	}
-	defer os.Remove(outPath)
+	defer func() { _ = os.Remove(outPath) }()
 }
 
 // ── viewerScript ──────────────────────────────────────────────────────────

@@ -83,7 +83,7 @@ func findOpenBlocker(s *session, query string) (blockerMatch, error) {
 	if err != nil {
 		return blockerMatch{}, fmt.Errorf("find blocker: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var matches []blockerMatch
 	for rows.Next() {

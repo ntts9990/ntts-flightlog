@@ -23,7 +23,7 @@ func TestConcurrentReadWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	// Seed prerequisites: one session + one turn (FK constraints).
 	if _, err := database.Exec(

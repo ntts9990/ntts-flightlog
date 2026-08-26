@@ -117,7 +117,7 @@ func QueryAgentStats(d *db.DB, f Filter) (*AgentStatsSnapshot, error) {
 	if err != nil {
 		return nil, fmt.Errorf("agent stats query: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var agents []AgentStat
 	for rows.Next() {

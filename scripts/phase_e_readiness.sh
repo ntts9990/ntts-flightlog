@@ -73,7 +73,11 @@ phase_e_sources=(
   ".omc/specs/v2-team-share-report.md"
   ".omc/specs/v2-adversarial-review.md"
 )
-todo_count="$(grep -RInE 'TODO|_to be filled|placeholder' "${phase_e_sources[@]}" 2>/dev/null | wc -l | tr -d ' ')"
+# Zero TODO/placeholder matches is the normal (good) path. Under `set -euo
+# pipefail`, grep's exit 1 (no match) would otherwise propagate as the
+# pipeline's status even though wc/tr succeed, aborting the script here.
+# `|| true` neutralizes that so a clean zero count doesn't trip set -e.
+todo_count="$(grep -RInE 'TODO|_to be filled|placeholder' "${phase_e_sources[@]}" 2>/dev/null | wc -l | tr -d ' ' || true)"
 entry_count="$(grep -Ec '^### [0-9]{4}-[0-9]{2}-[0-9]{2}' .omc/specs/alpha-dogfood-log.md 2>/dev/null || true)"
 changed_count="$(awk '
   /^### [0-9]{4}-[0-9]{2}-[0-9]{2}/ { in_entries=1 }

@@ -209,7 +209,7 @@ func ParseDir(dir string) (*V1Data, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open main.md: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	records, err := ParseMainMD(f)
 	if err != nil {
@@ -305,7 +305,7 @@ func QueryEntries(d *db.DB, sessionID string) ([]EntryRow, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query entries: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []EntryRow
 	for rows.Next() {
@@ -328,7 +328,7 @@ func QueryTurns(d *db.DB, sessionID string) ([]TurnRow, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query turns: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []TurnRow
 	for rows.Next() {

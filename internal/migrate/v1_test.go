@@ -44,7 +44,7 @@ func runRoundTripTest(t *testing.T, fixturePath string) {
 		t.Fatalf("open fixture %s: %v", fixturePath, err)
 	}
 	records1, err := migrate.ParseMainMD(f)
-	f.Close()
+	_ = f.Close()
 	if err != nil {
 		t.Fatalf("ParseMainMD: %v", err)
 	}
@@ -58,7 +58,7 @@ func runRoundTripTest(t *testing.T, fixturePath string) {
 	if err != nil {
 		t.Fatalf("open db1: %v", err)
 	}
-	defer db1.Close()
+	defer func() { _ = db1.Close() }()
 
 	v1data := &migrate.V1Data{Records: records1, Mode: "solo"}
 	sessID1, err := migrate.ImportToDB(db1, v1data)
@@ -94,7 +94,7 @@ func runRoundTripTest(t *testing.T, fixturePath string) {
 	if err != nil {
 		t.Fatalf("open db2: %v", err)
 	}
-	defer db2.Close()
+	defer func() { _ = db2.Close() }()
 
 	v1data2 := &migrate.V1Data{Records: records2, Mode: "solo"}
 	sessID2, err := migrate.ImportToDB(db2, v1data2)
@@ -274,7 +274,7 @@ func TestParseMainMDHeadingCount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	records, err := migrate.ParseMainMD(f)
 	if err != nil {

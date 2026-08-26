@@ -66,7 +66,7 @@ func runSelfUpgrade(cmd *cobra.Command, dryRun bool, apiURL string) error {
 		return fmt.Errorf("self-upgrade: eval symlinks: %w", err)
 	}
 	if isHomebrewPath(execPath) {
-		fmt.Fprintln(cmd.OutOrStdout(), "Use: brew upgrade ntts9990/tap/flightlog")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Use: brew upgrade ntts9990/tap/flightlog")
 		osExit(1)
 		return nil // unreachable; silences static analysis
 	}
@@ -118,7 +118,7 @@ func runSelfUpgrade(cmd *cobra.Command, dryRun bool, apiURL string) error {
 	if err != nil {
 		return fmt.Errorf("self-upgrade: download: %w", err)
 	}
-	defer os.Remove(archivePath)
+	defer func() { _ = os.Remove(archivePath) }()
 
 	// 6. Verify SHA-256 checksum.
 	cmd.Println("Verifying checksum...")
@@ -131,7 +131,7 @@ func runSelfUpgrade(cmd *cobra.Command, dryRun bool, apiURL string) error {
 	if err != nil {
 		return fmt.Errorf("self-upgrade: extract: %w", err)
 	}
-	defer os.Remove(binPath)
+	defer func() { _ = os.Remove(binPath) }()
 
 	if err := os.Chmod(binPath, 0o755); err != nil {
 		return fmt.Errorf("self-upgrade: chmod: %w", err)
@@ -209,7 +209,7 @@ func fetchLatestRelease(apiURL string) (*ghRelease, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("GitHub API returned HTTP %d", resp.StatusCode)
@@ -231,7 +231,7 @@ func downloadToTemp(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("download %s: HTTP %d", url, resp.StatusCode)
@@ -241,10 +241,10 @@ func downloadToTemp(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	if _, err := io.Copy(f, resp.Body); err != nil {
-		os.Remove(f.Name())
+		_ = os.Remove(f.Name())
 		return "", err
 	}
 	return f.Name(), nil
@@ -257,7 +257,7 @@ func verifyChecksum(filePath, filename, checksumURL string) error {
 	if err != nil {
 		return fmt.Errorf("fetch checksums: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("fetch checksums: HTTP %d", resp.StatusCode)
@@ -306,7 +306,7 @@ func sha256File(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
@@ -329,13 +329,13 @@ func extractFromTarGz(archivePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer af.Close()
+	defer func() { _ = af.Close() }()
 
 	gr, err := gzip.NewReader(af)
 	if err != nil {
 		return "", fmt.Errorf("gzip open: %w", err)
 	}
-	defer gr.Close()
+	defer func() { _ = gr.Close() }()
 
 	tr := tar.NewReader(gr)
 	for {
@@ -357,11 +357,11 @@ func extractFromTarGz(archivePath string) (string, error) {
 			return "", err
 		}
 		if _, err := io.Copy(out, tr); err != nil {
-			out.Close()
-			os.Remove(out.Name())
+			_ = out.Close()
+			_ = os.Remove(out.Name())
 			return "", err
 		}
-		out.Close()
+		_ = out.Close()
 		return out.Name(), nil
 	}
 	return "", fmt.Errorf("binary 'flightlog' not found in archive")
@@ -372,7 +372,7 @@ func extractFromZip(archivePath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("zip open: %w", err)
 	}
-	defer zr.Close()
+	defer func() { _ = zr.Close() }()
 
 	for _, f := range zr.File {
 		if filepath.Base(f.Name) != "flightlog.exe" {
@@ -384,17 +384,17 @@ func extractFromZip(archivePath string) (string, error) {
 		}
 		out, err := os.CreateTemp("", "flightlog-bin-*.exe")
 		if err != nil {
-			rc.Close()
+			_ = rc.Close()
 			return "", err
 		}
 		if _, err := io.Copy(out, rc); err != nil {
-			rc.Close()
-			out.Close()
-			os.Remove(out.Name())
+			_ = rc.Close()
+			_ = out.Close()
+			_ = os.Remove(out.Name())
 			return "", err
 		}
-		rc.Close()
-		out.Close()
+		_ = rc.Close()
+		_ = out.Close()
 		return out.Name(), nil
 	}
 	return "", fmt.Errorf("binary 'flightlog.exe' not found in zip")
